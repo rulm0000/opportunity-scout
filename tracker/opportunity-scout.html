@@ -1,0 +1,258 @@
+<title>Opportunity Scout</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one column. Last-run line, filter bar, then verified opportunities sorted by deadline; ruled-out list folded at the end. */
+:root {
+  --bg: #f6f8fa;
+  --surface: #ffffff;
+  --fg: #16212c;
+  --muted: #566573;
+  --line: #d9e1e8;
+  --accent: #1f6fa8;
+  --accent-soft: #e3eef7;
+  --good: #1d7a4a;
+  --good-soft: #e1f2e8;
+  --warn: #9a5b00;
+  --warn-soft: #fbefd9;
+  --bad: #a3312b;
+  --font-display: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f151b; --surface: #161e26; --fg: #e4ebf1; --muted: #9aaab8; --line: #2a3742;
+    --accent: #7cb8e6; --accent-soft: #1b2c3a; --good: #6fd09b; --good-soft: #15291f;
+    --warn: #f0b860; --warn-soft: #2e2414; --bad: #f08a83; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f151b; --surface: #161e26; --fg: #e4ebf1; --muted: #9aaab8; --line: #2a3742;
+  --accent: #7cb8e6; --accent-soft: #1b2c3a; --good: #6fd09b; --good-soft: #15291f;
+  --warn: #f0b860; --warn-soft: #2e2414; --bad: #f08a83; color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 920px; margin: 0 auto; padding-block: 32px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 24px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 1.0625rem; font-weight: 700; }
+p { margin: 0; max-width: 68ch; }
+a { color: var(--accent); }
+:is(a, button, select, summary):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.eyebrow { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+header { display: grid; gap: 8px; }
+.lede { color: var(--muted); }
+.runline { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 0.875rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.runline b { color: var(--fg); font-weight: 600; }
+
+.filters { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface); }
+.seg button { font: inherit; font-size: 0.8125rem; font-weight: 600; padding: 6px 11px; border: 0; border-right: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
+.seg .n { font-weight: 500; opacity: 0.8; margin-left: 4px; font-variant-numeric: tabular-nums; }
+
+.list { display: grid; gap: 10px; }
+.opp { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
+.opp.dim { opacity: 0.6; }
+.opp .main { display: grid; gap: 6px; min-width: 0; }
+.opp h3 { font-size: 1rem; font-weight: 600; }
+.opp h3 a { text-decoration: none; }
+.opp h3 a:hover { text-decoration: underline; }
+.meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 0.8125rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.meta .amt { color: var(--fg); font-weight: 600; }
+.why { font-size: 0.875rem; }
+.confirm { font-size: 0.8125rem; color: var(--warn); background: var(--warn-soft); border-radius: 6px; padding: 6px 10px; }
+.side { display: grid; gap: 6px; justify-items: end; text-align: right; }
+.due { font-size: 0.8125rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.due.soon { color: var(--warn); font-weight: 600; }
+.due.past { color: var(--bad); font-weight: 600; }
+select { font: inherit; font-size: 0.8125rem; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--fg); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 1px 8px; border-radius: 999px; white-space: nowrap; }
+.chip.cat { background: var(--accent-soft); color: var(--accent); }
+.chip.ok { background: var(--good-soft); color: var(--good); }
+.chip.check { background: var(--warn-soft); color: var(--warn); }
+.mono { font-family: var(--font-mono); font-size: 0.78rem; }
+@media (max-width: 560px) {
+  .opp { grid-template-columns: 1fr; }
+  .side { justify-items: start; text-align: left; grid-auto-flow: column; justify-content: space-between; align-items: center; }
+}
+
+.empty { background: var(--surface); border: 1px dashed var(--line); border-radius: 8px; padding: 24px; display: grid; gap: 6px; color: var(--muted); }
+.empty b { color: var(--fg); }
+details { border-top: 1px solid var(--line); padding-top: 16px; }
+summary { cursor: pointer; font-weight: 600; font-family: var(--font-display); }
+.ruled { display: grid; gap: 8px; margin-top: 12px; font-size: 0.875rem; }
+.ruled div { display: grid; gap: 2px; }
+.ruled .r { color: var(--muted); font-size: 0.8125rem; }
+.notes { color: var(--muted); font-size: 0.8125rem; display: grid; gap: 6px; }
+.err { color: var(--bad); font-size: 0.8125rem; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Grants, industry funding, scholarships, jobs</div>
+    <h1>Opportunity Scout</h1>
+    <p class="lede">Only opportunities an independent check found you eligible for, or nearly eligible with one thing to confirm. Every item was verified on the funder's or employer's own page.</p>
+    <div class="runline" id="runline">Loading the latest run…</div>
+  </header>
+
+  <div class="filters">
+    <div class="seg" role="group" aria-label="Category" id="cats"></div>
+    <div class="seg" role="group" aria-label="Status" id="stats"></div>
+  </div>
+
+  <div class="list" id="list">
+    <div class="empty"><b>Loading opportunities…</b><span>If this stays empty, open the tracker in Claude so it can reach its saved data.</span></div>
+  </div>
+  <div class="err" id="err" hidden></div>
+
+  <details id="ruled-wrap">
+    <summary>Ruled out <span id="ruled-count" class="lede" style="font-weight:400"></span></summary>
+    <div class="ruled" id="ruled"><span class="lede">Open to load.</span></div>
+  </details>
+
+  <footer class="notes">
+    <span>Updated every Tuesday morning by the weekly opportunity scout: GROW's Grants.gov match plus four search agents, then a separate verifier that checks each find against your eligibility criteria.</span>
+    <span>Your status choices save here and the scout leaves them alone.</span>
+  </footer>
+</div>
+
+<script>
+const CATS = [
+  { key: 'all', label: 'All' },
+  { key: 'grant', label: 'Grants' },
+  { key: 'industry', label: 'Industry' },
+  { key: 'scholarship', label: 'Scholarships & awards' },
+  { key: 'job', label: 'Jobs' }
+];
+const STATUSES = [
+  { key: 'active', label: 'Open' },
+  { key: 'applied', label: 'Applied' },
+  { key: 'dismissed', label: 'Not for me' }
+];
+const STATUS_OPTIONS = [['new', 'New'], ['interested', 'Interested'], ['applied', 'Applied'], ['dismissed', 'Not for me']];
+const CAT_LABEL = { grant: 'Grant', industry: 'Industry', scholarship: 'Scholarship / award', job: 'Job' };
+
+let view = { cat: 'all', status: 'active' };
+try { const s = JSON.parse(localStorage.getItem('scout-view') || 'null'); if (s && s.cat && s.status) view = s; } catch (e) {}
+let opps = [];
+let db = null;
+const writing = new Set();
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const safeUrl = u => /^https?:\/\//i.test(String(u || '')) ? String(u) : '';
+function dueInfo(d) {
+  if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return { text: d ? String(d) : 'Rolling', days: Infinity, cls: '' };
+  const [y, m, dd] = d.split('-').map(Number);
+  const due = new Date(y, m - 1, dd); const t = new Date(); t.setHours(0, 0, 0, 0);
+  const days = Math.round((due - t) / 86400000);
+  const text = due.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  if (days < 0) return { text: text + ' · closed', days, cls: 'past' };
+  if (days <= 30) return { text: text + ' · ' + (days === 0 ? 'today' : days === 1 ? 'tomorrow' : days + ' days'), days, cls: 'soon' };
+  return { text, days, cls: '' };
+}
+function statusBucket(o) { const s = o.status || 'new'; return s === 'applied' ? 'applied' : s === 'dismissed' ? 'dismissed' : 'active'; }
+function saveView() { try { localStorage.setItem('scout-view', JSON.stringify(view)); } catch (e) {} }
+
+function renderFilters() {
+  const byStatus = opps.filter(o => statusBucket(o) === view.status);
+  $('cats').innerHTML = CATS.map(c => {
+    const n = c.key === 'all' ? byStatus.length : byStatus.filter(o => o.category === c.key).length;
+    return `<button type="button" data-cat="${c.key}" aria-pressed="${view.cat === c.key}">${esc(c.label)}<span class="n">${n}</span></button>`;
+  }).join('');
+  $('stats').innerHTML = STATUSES.map(s => {
+    const n = opps.filter(o => statusBucket(o) === s.key).length;
+    return `<button type="button" data-status="${s.key}" aria-pressed="${view.status === s.key}">${esc(s.label)}<span class="n">${n}</span></button>`;
+  }).join('');
+}
+
+function render() {
+  renderFilters();
+  const rows = opps
+    .filter(o => statusBucket(o) === view.status)
+    .filter(o => view.cat === 'all' || o.category === view.cat)
+    .map(o => ({ o, due: dueInfo(o.deadline) }))
+    .sort((a, b) => (a.due.days < 0 ? 1e9 : a.due.days) - (b.due.days < 0 ? 1e9 : b.due.days));
+  if (!opps.length) {
+    $('list').innerHTML = `<div class="empty"><b>Nothing here yet.</b><span>The weekly scout adds verified opportunities every Tuesday morning. A first run may already be underway.</span></div>`;
+    return;
+  }
+  if (!rows.length) {
+    $('list').innerHTML = `<div class="empty"><b>No ${view.status === 'active' ? 'open' : view.status === 'applied' ? 'applied' : 'dismissed'} items in this category.</b><span>Try another filter.</span></div>`;
+    return;
+  }
+  $('list').innerHTML = rows.map(({ o, due }) => {
+    const url = safeUrl(o.link);
+    const title = url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(o.name)}</a>` : esc(o.name);
+    const elig = o.eligibility === 'confirm' ? '<span class="chip check">Confirm one thing</span>' : '<span class="chip ok">Eligible</span>';
+    const grow = (typeof o.growScore === 'number') ? `<span>GROW score ${o.growScore.toFixed(1)}%</span>` : '';
+    const opts = STATUS_OPTIONS.map(([k, l]) => `<option value="${k}" ${((o.status || 'new') === k) ? 'selected' : ''}>${l}</option>`).join('');
+    return `<article class="opp ${statusBucket(o) !== 'active' ? 'dim' : ''}">
+      <div class="main">
+        <div class="chips"><span class="chip cat">${esc(CAT_LABEL[o.category] || o.category || 'Other')}</span>${elig}</div>
+        <h3>${title}</h3>
+        <div class="meta">${o.amount ? `<span class="amt">${esc(o.amount)}</span>` : ''}<span>${esc(o.org || '')}</span>${o.number ? `<span class="mono">${esc(o.number)}</span>` : ''}${grow}</div>
+        ${o.whyFit ? `<p class="why">${esc(o.whyFit)}</p>` : ''}
+        ${o.eligibility === 'confirm' && o.confirmNote ? `<div class="confirm">To confirm: ${esc(o.confirmNote)}</div>` : ''}
+        <div class="meta"><span>Found ${esc(o.firstSeen || '')}</span>${o.lastVerified ? `<span>Verified ${esc(o.lastVerified)}</span>` : ''}${o.source ? `<span>${esc(o.source)}</span>` : ''}</div>
+      </div>
+      <div class="side">
+        <span class="due ${due.cls}">${esc(due.text)}</span>
+        <label class="lede" style="font-size:0.75rem" for="st-${esc(o._id)}">Status</label>
+        <select id="st-${esc(o._id)}" data-id="${esc(o._id)}" ${db ? '' : 'disabled'}>${opts}</select>
+      </div>
+    </article>`;
+  }).join('');
+}
+
+document.addEventListener('click', e => {
+  const c = e.target.closest('[data-cat]'); if (c) { view.cat = c.dataset.cat; saveView(); render(); return; }
+  const s = e.target.closest('[data-status]'); if (s) { view.status = s.dataset.status; saveView(); render(); }
+});
+document.addEventListener('change', async e => {
+  const sel = e.target.closest('select[data-id]'); if (!sel || !db) return;
+  const id = sel.dataset.id; if (writing.has(id)) return;
+  writing.add(id); sel.disabled = true; $('err').hidden = true;
+  try { await db.collection('opps').doc(id).update({ status: sel.value, statusChanged: new Date().toISOString().slice(0, 10) }); }
+  catch (err) { $('err').textContent = 'Could not save that status change. Reload the page and try again.'; $('err').hidden = false; }
+  finally { writing.delete(id); sel.disabled = false; }
+});
+
+$('ruled-wrap').addEventListener('toggle', async () => {
+  if (!$('ruled-wrap').open || !db) return;
+  try {
+    const snap = await db.collection('ruledout').orderBy('date', 'desc').limit(60).get();
+    $('ruled').innerHTML = snap.empty ? '<span class="lede">Nothing ruled out yet.</span>' :
+      snap.docs.map(d => { const r = d.data() || {}; const url = safeUrl(r.link);
+        return `<div><span>${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(r.name)}</a>` : esc(r.name)} <span class="lede">${esc(r.org || '')}</span></span><span class="r">${esc(r.date || '')} · ${esc(r.reason || '')}</span></div>`; }).join('');
+  } catch (err) { $('ruled').innerHTML = '<span class="err">Could not load the ruled-out list.</span>'; }
+});
+
+(async () => {
+  db = await (window.claude?.use ? window.claude.use('db') : Promise.resolve(null));
+  if (!db) {
+    $('runline').textContent = 'Saved data is not available in this view.';
+    $('list').innerHTML = `<div class="empty"><b>The tracker's data could not load here.</b><span>Open it from your Claude artifacts while signed in.</span></div>`;
+    return;
+  }
+  db.collection('opps').onSnapshot(snap => {
+    opps = snap.docs.map(d => ({ _id: d.id, ...(d.data() || {}) }));
+    render();
+  }, () => { $('err').textContent = 'The opportunity list stopped updating. Reload the page.'; $('err').hidden = false; });
+  db.collection('runs').orderBy('date', 'desc').limit(1).onSnapshot(snap => {
+    if (snap.empty) { $('runline').innerHTML = 'No weekly run recorded yet.'; return; }
+    const r = snap.docs[0].data() || {}; const t = r.totals || {};
+    $('runline').innerHTML = `<span>Last run <b>${esc(r.date || '')}</b></span><span><b>${t.candidates ?? 0}</b> candidates checked</span><span><b>${t.eligible ?? 0}</b> eligible</span><span><b>${t.confirm ?? 0}</b> to confirm</span><span><b>${t.rejected ?? 0}</b> ruled out</span>`;
+    $('ruled-count').textContent = '';
+  }, () => {});
+})();
+</script>

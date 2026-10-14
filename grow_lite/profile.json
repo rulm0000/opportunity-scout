@@ -1,0 +1,47 @@
+{
+  "name": "Clayton Ulm",
+  "institution": "University of North Carolina at Chapel Hill",
+  "department": "Health Behavior, Gillings School of Global Public Health",
+  "position": "PhD student (predoctoral)",
+  "researcherType": "biomedical",
+  "expertise_level": "intermediate",
+  "early_investigator": "True",
+  "keywords": [
+    "tobacco",
+    "biological aging",
+    "cognitive aging",
+    "alzheimer",
+    "health behavior",
+    "nutrition",
+    "alcohol",
+    "sleep"
+  ],
+  "optimized_keywords": [
+    "epigenetic",
+    "dementia",
+    "smoking",
+    "menthol",
+    "food policy",
+    "cognitive function"
+  ],
+  "research_areas": [
+    "public health",
+    "epidemiology",
+    "aging",
+    "health behavior",
+    "tobacco regulatory science"
+  ],
+  "agencies": ["NIH"],
+  "researchInterests": [
+    "health behaviors and organ-system biological aging",
+    "midlife cognitive function",
+    "predoctoral research training"
+  ],
+  "methodologies": [
+    "structural equation modeling",
+    "mediation analysis",
+    "latent variable modeling",
+    "causal inference",
+    "systems science"
+  ]
+}

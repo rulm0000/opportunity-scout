@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+grant_matches.csv
+grant_matches.json
+*_matches.csv
+*_matches.json
