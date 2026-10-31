@@ -4,3 +4,10 @@ grant_matches.csv
 grant_matches.json
 *_matches.csv
 *_matches.json
+# network search: personal inputs and results stay local
+network/*.json
+!network/*.example.json
+network/*.html
+!network/map_template.html
+network/outreach/drafts.json
+network/outreach/bodies/

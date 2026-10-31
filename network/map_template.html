@@ -1,0 +1,290 @@
+<title>Job Network</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: orbit map (distance from you = closeness) beside a ranked "who to contact" list; stacks on phones. */
+:root {
+  --bg: #F3F6F8; --panel: #FFFFFF; --ink: #13212C; --muted: #5A6A77; --rule: #D6DEE5;
+  --c5: #0A4F7A; --c4: #1F74A8; --c3: #4B9CD3; --c2: #93C1E2; --c1: #C9DDEC;
+  --direct: #C2571A; --edge: #9FB3C3; --hub: #2E3E4A; --hilite: #F2C14E;
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-data: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0E161D; --panel: #15212B; --ink: #E6EDF2; --muted: #9AABB8; --rule: #2A3A47;
+  --c5: #8CC8F0; --c4: #6AB2E4; --c3: #4B9CD3; --c2: #2F6E9C; --c1: #24506F;
+  --direct: #F08A4B; --edge: #3D5464; --hub: #C9D6E0; --hilite: #F2C14E; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0E161D; --panel: #15212B; --ink: #E6EDF2; --muted: #9AABB8; --rule: #2A3A47;
+  --c5: #8CC8F0; --c4: #6AB2E4; --c3: #4B9CD3; --c2: #2F6E9C; --c1: #24506F;
+  --direct: #F08A4B; --edge: #3D5464; --hub: #C9D6E0; --hilite: #F2C14E; color-scheme: dark }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--f-body); margin: 0; }
+.wrap { max-width: 1320px; margin: 0 auto; padding-block: 28px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 20px; }
+header h1 { font: 700 clamp(26px, 3.4vw, 38px)/1.1 var(--f-display); margin: 0 0 6px; letter-spacing: -0.01em; text-wrap: balance; }
+header p { margin: 0; color: var(--muted); max-width: 72ch; }
+.stats { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 12px; font: 500 13px/1.3 var(--f-data); color: var(--muted); }
+.stats b { color: var(--ink); font-weight: 600; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.controls .lbl { font: 600 11px/1 var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+.chip { font: 500 13px/1 var(--f-body); padding: 7px 11px; border-radius: 999px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chip:focus-visible, .row:focus-visible, button:focus-visible { outline: 2px solid var(--c3); outline-offset: 2px; }
+.main { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 900px) { .main { grid-template-columns: 1fr; } }
+.mapbox { background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; overflow-x: auto; min-width: 0; }
+svg { display: block; width: 100%; min-width: 760px; height: auto; }
+svg text { fill: var(--ink); font-family: var(--f-body); }
+.ring { fill: none; stroke: var(--rule); stroke-dasharray: 2 5; }
+.ringlbl { font: 500 10px var(--f-data); fill: var(--muted); }
+.emplbl { font: 600 12.5px var(--f-body); }
+.emplbl.none { fill: var(--muted); font-weight: 500; }
+.edge { fill: none; stroke: var(--edge); }
+.edge.direct { stroke: var(--direct); }
+.edge.hub { stroke: var(--c4); opacity: .6; }
+.edge.later { stroke: var(--edge); opacity: .45; }
+.node { cursor: pointer; stroke: var(--panel); stroke-width: 1.5; }
+.hubnode { fill: var(--panel); stroke: var(--hub); stroke-width: 1.5; cursor: pointer; }
+.hublbl { font: 600 10.5px var(--f-body); }
+.plbl { font: 500 10.5px var(--f-body); pointer-events: none; }
+.dim { opacity: .12; }
+.hublbl, .ringlbl, .plbl, .emplbl { paint-order: stroke; stroke: var(--panel); stroke-width: 4px; stroke-linejoin: round; }
+.sel { stroke: var(--hilite) !important; stroke-width: 3 !important; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 16px; border-top: 1px solid var(--rule); font-size: 12.5px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+.side { display: grid; gap: 14px; min-width: 0; }
+.card { background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 18px; min-width: 0; }
+.card h2 { font: 700 15px/1.2 var(--f-display); margin: 0 0 10px; letter-spacing: .01em; }
+.detail .who { font: 700 19px/1.2 var(--f-display); margin: 0; }
+.detail .meta { color: var(--muted); font-size: 13.5px; margin: 2px 0 10px; }
+.detail dl { display: grid; grid-template-columns: 112px 1fr; gap: 6px 12px; margin: 0; font-size: 13.5px; }
+.detail dt { color: var(--muted); }
+.detail dd { margin: 0; overflow-wrap: anywhere; }
+.pill { display: inline-block; font: 600 11px/1 var(--f-data); padding: 4px 7px; border-radius: 4px; color: #fff; }
+.list { max-height: 560px; overflow-y: auto; margin: 0 -6px; }
+.row { display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center; padding: 8px 6px; border-bottom: 1px solid var(--rule); cursor: pointer; }
+.row:hover { background: color-mix(in srgb, var(--c3) 9%, transparent); }
+.row .pr { font: 600 13px var(--f-data); text-align: right; font-variant-numeric: tabular-nums; }
+.row .nm { font-weight: 600; font-size: 14px; }
+.row .sub { color: var(--muted); font-size: 12.5px; }
+.row .emp { font: 500 12px var(--f-data); color: var(--muted); text-align: right; }
+.note { font-size: 12.5px; color: var(--muted); }
+@media (prefers-reduced-motion: no-preference) { .node, .edge, .hubnode { transition: opacity .15s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Who can get you in the door</h1>
+    <p>Everyone at the places you applied to whom you can reach, and the route to each one. Orange lines are people you already know. Solid blue lines run through the people you would ask for an introduction; thicker lines mean you email them more. Grey dashed lines run through contacts you are not ready to ask yet. A star means the introduction is agreed. A check mark means the claim was fact-checked. Click anyone for the path, the proof and the next step.</p>
+    <div class="stats" id="stats"></div>
+  </header>
+
+  <div class="controls" id="filters"><span class="lbl">Employer</span></div>
+
+  <div class="main">
+    <div class="mapbox">
+      <svg id="map" viewBox="0 0 1000 1000" role="img" aria-label="Network map of contacts by employer and closeness"></svg>
+      <div class="legend">
+        <span><i class="dot" style="background:var(--direct)"></i>4 to 5: you emailed, met or worked with them</span>
+        <span><i class="dot" style="background:var(--c3)"></i>3: through someone you'd ask</span>
+        <span><i class="dot" style="background:var(--edge)"></i>3: through someone you're not ready to ask yet</span>
+        <span><i class="dot" style="background:var(--c2)"></i>2: same program</span>
+        <span>★ introduction agreed</span>
+        <span><svg width="16" height="12" style="min-width:0;width:16px;display:inline"><circle cx="8" cy="6" r="5" fill="none" stroke="var(--hub)" stroke-width="1.5"/></svg>connector or program</span>
+      </div>
+    </div>
+    <div class="side">
+      <div class="card detail" id="detail">
+        <h2>Selected</h2>
+        <p class="note">Click a person on the map or in the list.</p>
+      </div>
+      <div class="card">
+        <h2>Who to contact first</h2>
+        <div class="list" id="list"></div>
+        <p class="note" style="margin-top:10px">Priority 0 to 10: worked with you 10, introduction agreed 9, emailed or met 8, through someone you'd ask 7, through an insider 6, through a maybe 5, same program 3, through someone you're not ready to ask 2.5. One point off when the match is uncertain. Fact-checked claims are marked.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = __DATA__;
+(function () {
+  const C = DATA.contacts, EMP = DATA.employers;
+  const svg = document.getElementById('map'), NS = 'http://www.w3.org/2000/svg';
+  const el = (t, a, p) => { const e = document.createElementNS(NS, t); for (const k in a) if (a[k] !== '' && a[k] != null) e.setAttribute(k, a[k]); (p || svg).appendChild(e); return e; };
+  const colorFor = c => c >= 4 ? 'var(--direct)' : ({3: 'var(--c3)', 2: 'var(--c2)', 1: 'var(--c1)'}[c]);
+  const short = s => s.replace(/\s*\(.*?\)\s*/g, ' ').trim();
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, ch => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[ch]));
+
+  const n4 = C.filter(c => c.closeness >= 4).length, n3 = C.filter(c => c.closeness === 3 && c.intro !== 'later').length, nAg = C.filter(c => c.status === 'agreed').length;
+  document.getElementById('stats').innerHTML =
+    `<span><b>${nAg}</b> introductions agreed</span><span><b>${DATA.n_apps}</b> applications</span><span><b>${C.length}</b> people found</span>` +
+    `<span><b>${n4}</b> you already know</span><span><b>${n3}</b> through people you'd ask</span><span><b>${EMP.filter(e => !e.count).length}</b> employers with no route yet</span>`;
+
+  // Routes: direct, connectors (by emails with you), programs
+  const routes = [], rmap = {};
+  const addRoute = (key, kind, label, sub, w) => { if (!rmap[key]) { rmap[key] = {key, kind, label, sub, w, items: []}; routes.push(rmap[key]); } return rmap[key]; };
+  addRoute('__direct', 'direct', 'You know them', 'emailed, met or worked with', 7);
+  const conn = {}, IORD = {trusted: 0, insider: 1, maybe: 2, later: 3};
+  C.filter(c => c.closeness === 3 && c.connector).forEach(c => { const k = c.connector; conn[k] = conn[k] || {ex: 0, intro: c.intro, ag: 0}; conn[k].ex = Math.max(conn[k].ex, c.connector_exchanges || 0); if (c.status === 'agreed') conn[k].ag++; });
+  Object.entries(conn).sort((a, b) => IORD[a[1].intro] - IORD[b[1].intro] || b[1].ag - a[1].ag || b[1].ex - a[1].ex).forEach(([k, v]) => {
+    const sub = v.intro === 'later' ? 'not ready to ask yet' : (v.ag ? v.ag + ' agreed · ' : '') + (v.intro === 'insider' ? DATA.insider_label : (v.intro === 'maybe' ? 'maybe · ' : '') + v.ex + ' emails with you');
+    const r = addRoute(k, 'connector', k, sub, v.intro === 'later' ? 1.2 : v.ex >= 100 ? 6 : v.ex >= 20 ? 4 : 2.6); r.intro = v.intro; });
+  const PROG = [...new Set(C.filter(c => c.closeness <= 2).map(c => c.program || 'Same program'))]; C.forEach(c => { if (c.closeness <= 2 && !c.program) c.program = 'Same program'; });
+  PROG.forEach(p => { if (C.some(c => c.closeness <= 2 && c.program === p)) addRoute('p:' + p, 'program', p, C.some(c => c.closeness === 2 && c.program === p) ? 'same program' : 'same university', 1.3); });
+
+  // Items: named people (closeness >= 3) and bundles of alumni per program x employer
+  const items = [];
+  C.forEach(c => {
+    if (c.closeness >= 4) { c.route = rmap.__direct; items.push({type: 'person', c, route: c.route}); }
+    else if (c.closeness === 3) { c.route = rmap[c.connector]; items.push({type: 'person', c, route: c.route}); }
+  });
+  const bundles = {};
+  C.filter(c => c.closeness <= 2).forEach(c => {
+    const r = rmap['p:' + c.program]; c.route = r;
+    const k = r.key + '|' + c.employer;
+    if (!bundles[k]) { bundles[k] = {type: 'bundle', route: r, employer: c.employer, people: []}; items.push(bundles[k]); }
+    bundles[k].people.push(c);
+  });
+  items.forEach(it => { it.employer = it.type === 'person' ? it.c.employer : it.employer; it.cl = it.type === 'person' ? it.c.closeness : Math.max(...it.people.map(p => p.closeness)); it.pr = it.type === 'person' ? it.c.priority : Math.max(...it.people.map(p => p.priority)); });
+
+  // Employer order by where their items sit (barycenter of route index), empty ones last
+  const ridx = r => routes.indexOf(r);
+  const empPos = {};
+  EMP.forEach(e => { const its = items.filter(i => i.employer === e.name); empPos[e.name] = its.length ? its.reduce((s, i) => s + ridx(i.route), 0) / its.length : 999; });
+  const EORD = EMP.slice(); // your order of preference
+  const eIdx = n => EORD.findIndex(e => e.name === n);
+  items.sort((a, b) => ridx(a.route) - ridx(b.route) || eIdx(a.employer) - eIdx(b.employer) || b.pr - a.pr);
+
+  // Geometry
+  const X = {me: 60, route: 280, item: 585, emp: 870}, ROW = 21, TOP = 70;
+  const H = TOP + items.length * ROW + 40;
+  svg.setAttribute('viewBox', `0 0 1120 ${H}`);
+  items.forEach((it, i) => it.y = TOP + i * ROW);
+  routes.forEach(r => { const its = items.filter(i => i.route === r); r.y = its.reduce((s, i) => s + i.y, 0) / its.length; r.n = its.length; });
+  // keep route labels from colliding
+  for (let i = 1; i < routes.length; i++) if (routes[i].y - routes[i - 1].y < 30) routes[i].y = routes[i - 1].y + 30;
+  const eGap = (H - TOP - 60) / Math.max(EORD.length - 1, 1);
+  EORD.forEach((e, i) => e.y = TOP + i * Math.min(eGap, 64));
+  const meY = TOP + 10;
+
+  // Column heads
+  [['You', X.me], ['How you reach them', X.route], ['Person', X.item], ['Employer you applied to', X.emp]].forEach(([t, x]) => {
+    const h = el('text', {x, y: 30, class: 'ringlbl', 'text-anchor': x === X.me ? 'middle' : 'start'}); h.textContent = t.toUpperCase();
+  });
+
+  const gE = el('g', {}), gN = el('g', {}), gL = el('g', {});
+  const bez = (x1, y1, x2, y2) => { const mx = (x1 + x2) / 2; return `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`; };
+
+  // edges: you -> route
+  routes.forEach(r => {
+    r.e = el('path', {d: bez(X.me + 22, meY, X.route - 8, r.y), class: 'edge' + (r.kind === 'direct' ? ' direct' : r.intro === 'later' ? ' later' : ' hub'), 'stroke-width': r.w, 'stroke-dasharray': r.kind === 'program' || r.intro === 'later' ? '3 4' : ''}, gE);
+  });
+  // route -> item, item -> employer
+  items.forEach(it => {
+    const later = it.route.intro === 'later';
+    const col = it.type === 'person' && !later ? colorFor(it.cl) : 'var(--edge)';
+    it.e1 = el('path', {d: bez(X.route + 8, it.route.y, X.item - 8, it.y), class: 'edge' + (it.route.kind === 'direct' ? ' direct' : ''), stroke: it.route.kind === 'direct' ? '' : col, 'stroke-width': it.cl >= 4 ? 2.6 : it.cl === 3 && !later ? 1.6 : 1, 'stroke-dasharray': it.cl <= 2 || later ? '2 4' : '', opacity: it.cl >= 3 && !later ? 0.9 : 0.6}, gE);
+    const e = EORD[eIdx(it.employer)];
+    it.e2 = el('path', {d: bez(X.item + 200, it.y, X.emp - 10, e.y), class: 'edge', 'stroke-width': 0.8, opacity: 0.5}, gE);
+  });
+
+  // nodes
+  el('circle', {cx: X.me, cy: meY, r: 22, fill: 'var(--ink)'}, gN);
+  const me = el('text', {x: X.me, y: meY + 4, 'text-anchor': 'middle', style: 'fill:var(--bg);font:700 12px var(--f-display)'}, gN); me.textContent = 'You';
+
+  routes.forEach(r => {
+    r.node = el('circle', {cx: X.route, cy: r.y, r: r.kind === 'direct' ? 9 : 6.5, class: 'hubnode', tabindex: 0, role: 'button', 'aria-label': r.label, style: r.kind === 'direct' ? 'stroke:var(--direct);stroke-width:2.5' : r.intro === 'trusted' ? 'stroke:var(--c4);stroke-width:2.5' : r.intro === 'later' ? 'stroke:var(--edge);stroke-dasharray:2 2' : ''}, gN);
+    const t = el('text', {x: X.route + 14, y: r.y - 1, class: 'hublbl', style: r.intro === 'later' ? 'fill:var(--muted);font-weight:500' : ''}, gL); t.textContent = short(r.label);
+    const s = el('text', {x: X.route + 14, y: r.y + 11, class: 'ringlbl'}, gL); s.textContent = r.sub;
+    r.lbls = [t, s];
+    r.node.addEventListener('click', () => focusRoute(r));
+    r.node.addEventListener('keydown', ev => { if (ev.key === 'Enter') focusRoute(r); });
+  });
+  items.forEach(it => {
+    const isP = it.type === 'person';
+    const lat = it.route.intro === 'later';
+    it.node = el('circle', {cx: X.item, cy: it.y, r: isP ? (it.cl >= 4 || (isP && it.c.status === 'agreed') ? 7.5 : 5.5) : 4.5, fill: isP ? (lat ? 'var(--edge)' : colorFor(it.cl)) : 'var(--c1)', class: 'node', tabindex: 0, role: 'button', 'aria-label': isP ? it.c.person : it.people.length + ' alumni at ' + it.employer}, gN);
+    const t = el('text', {x: X.item + 12, y: it.y + 4, class: 'plbl', style: isP && !lat ? (it.c.status === 'agreed' ? 'font-weight:700' : '') : 'fill:var(--muted)'}, gL);
+    t.textContent = isP ? (it.c.status === 'agreed' ? '★ ' : '') + short(it.c.person) + (it.c.fact_check === 'pass' || it.c.fact_check === 'fix' ? ' ✓' : '') : `${it.people.length} ${it.people.length > 1 ? 'alumni' : 'alum'} (${it.people.map(p => short(p.person).split(' ').slice(-1)[0]).slice(0, 3).join(', ')}${it.people.length > 3 ? ', ...' : ''})`;
+    it.lbl = t;
+    const go = () => isP ? select(it.c) : showBundle(it);
+    it.node.addEventListener('click', go); it.node.addEventListener('keydown', ev => { if (ev.key === 'Enter') go(); });
+  });
+  EORD.forEach(e => {
+    e.node = el('circle', {cx: X.emp, cy: e.y, r: 5, fill: e.count ? 'var(--ink)' : 'var(--rule)'}, gN);
+    const t = el('text', {x: X.emp + 12, y: e.y + 4, class: 'emplbl' + (e.count ? '' : ' none')}, gL);
+    t.textContent = e.name + (e.count ? '' : '  (no route yet)'); e.lbl = t;
+  });
+
+  // list
+  const listEl = document.getElementById('list');
+  function renderList(filter) {
+    listEl.innerHTML = '';
+    C.filter(c => !filter || c.employer === filter).forEach(c => {
+      const d = document.createElement('div'); d.className = 'row'; d.tabIndex = 0;
+      d.innerHTML = `<span class="pr">${String(c.priority).replace('.0', '')}</span><span><div class="nm"></div><div class="sub"></div></span><span class="emp"></span>`;
+      d.querySelector('.nm').textContent = (c.status === 'agreed' ? '★ ' : '') + c.person;
+      d.querySelector('.sub').textContent = (c.status === 'agreed' ? 'Agreed: ' : c.status === 'asked' ? 'Asked: ' : '') + (c.closeness >= 4 ? c.how : (c.connector ? 'via ' + c.connector + (c.intro === 'later' ? ' (not ready to ask)' : '') : (c.program || c.how)));
+      d.querySelector('.emp').textContent = c.employer;
+      d.addEventListener('click', () => select(c)); d.addEventListener('keydown', ev => { if (ev.key === 'Enter') select(c); });
+      listEl.appendChild(d);
+    });
+  }
+
+  const det = document.getElementById('detail');
+  const clip = (s, n) => { s = String(s || ''); return s.length > n ? s.slice(0, n).replace(/\s+\S*$/, '') + ' ...' : s; };
+  function select(c) {
+    items.forEach(i => i.node.classList.remove('sel'));
+    const it = items.find(i => i.c === c || (i.people && i.people.includes(c))); if (it) it.node.classList.add('sel');
+    const fc = c.fact_check === 'pass' ? 'Checked, confirmed' : c.fact_check === 'fix' ? 'Checked, corrected' : (c.closeness < 3 ? 'Not required below 3' : esc(c.fact_check));
+    det.innerHTML = `<h2>Selected</h2><p class="who">${esc(c.person)}</p><p class="meta">${esc(clip(c.title, 140))}${c.title ? ' · ' : ''}${esc(c.employer)}</p>
+      <dl>${c.status ? `<dt>Status</dt><dd><b>${c.status === 'agreed' ? '★ Introduction agreed' : 'Asked, in progress'}</b><br>${esc(c.status_note)}</dd>` : ''}
+      <dt>Closeness</dt><dd><span class="pill" style="background:${colorFor(c.closeness)}">${c.closeness} of 5</span> &nbsp;priority ${c.priority}</dd>
+      <dt>Connection</dt><dd>${esc(c.how)}</dd>
+      ${c.connector ? `<dt>Connector</dt><dd>${esc(c.connector)} (${c.connector_exchanges} emails with you in 12 months)${c.intro === 'later' ? '<br><span class="note">Not someone you are ready to ask yet. Reach out directly, or come back to this later.</span>' : c.intro === 'maybe' ? '<br><span class="note">Maybe ready to ask.</span>' : c.intro === 'insider' ? '<br><span class="note">Works at the employer and knows you, so asking them to point you to colleagues is a normal ask.</span>' : ''}</dd>` : ''}
+      <dt>Path</dt><dd>${esc(c.path)}</dd><dt>Next step</dt><dd>${esc(clip(c.action, 420))}</dd>
+      <dt>Proof</dt><dd>${esc(clip(c.evidence, 260))}${c.evidence_quote ? '<br><span class="note">"' + esc(clip(c.evidence_quote, 200)) + '"</span>' : ''}</dd>
+      <dt>Fact check</dt><dd>${fc}${c.fact_note ? ' <span class="note">(' + esc(clip(c.fact_note, 200)) + ')</span>' : ''}</dd>
+      <dt>Confidence</dt><dd>${esc(c.confidence)}</dd></dl>`;
+  }
+  function showBundle(it) {
+    items.forEach(i => i.node.classList.remove('sel')); it.node.classList.add('sel');
+    det.innerHTML = `<h2>Selected</h2><p class="who">${it.people.length} ${esc(it.route.label)} ${it.people.length > 1 ? 'people' : 'person'}</p><p class="meta">at ${esc(it.employer)}</p>
+      <dl>${it.people.map(p => `<dt>${p.closeness} of 5</dt><dd><a href="#" data-i="${C.indexOf(p)}">${esc(p.person)}</a><br><span class="note">${esc(clip(p.title, 120))}</span></dd>`).join('')}</dl>`;
+    det.querySelectorAll('a[data-i]').forEach(a => a.addEventListener('click', ev => { ev.preventDefault(); select(C[+a.dataset.i]); }));
+  }
+  function setDim(pred) {
+    items.forEach(i => { const on = pred(i); [i.node, i.lbl, i.e1, i.e2].forEach(x => x.classList.toggle('dim', !on)); });
+    routes.forEach(r => { const on = items.some(i => i.route === r && pred(i)); [r.node, r.e, ...r.lbls].forEach(x => x.classList.toggle('dim', !on)); });
+    EORD.forEach(e => { const on = items.some(i => i.employer === e.name && pred(i)) || (!e.count && pred({employer: e.name, route: null, none: true})); [e.node, e.lbl].forEach(x => x.classList.toggle('dim', !on)); });
+  }
+  function focusRoute(r) {
+    setDim(i => i.route === r);
+    const its = items.filter(i => i.route === r);
+    det.innerHTML = `<h2>Selected</h2><p class="who">${esc(r.label)}</p><p class="meta">${esc(r.sub)}</p>
+      <dl><dt>Can reach</dt><dd>${its.map(i => i.type === 'person' ? esc(i.c.person) + ' (' + esc(i.employer) + ')' : i.people.length + ' at ' + esc(i.employer)).join('<br>')}</dd></dl>`;
+  }
+
+  const fbox = document.getElementById('filters');
+  const mk = (label, val) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = label; b.setAttribute('aria-pressed', 'false'); b.dataset.v = val; fbox.appendChild(b); return b; };
+  mk('All', '');
+  EMP.filter(e => e.count).forEach(e => mk(e.name + ' ' + e.count, e.name));
+  let cur = '';
+  try { cur = localStorage.getItem('net-filter') || ''; } catch (e) {}
+  function apply(v) {
+    cur = v; try { localStorage.setItem('net-filter', v); } catch (e) {}
+    fbox.querySelectorAll('.chip').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+    setDim(i => !v || i.employer === v);
+    renderList(v);
+  }
+  fbox.addEventListener('click', ev => { const b = ev.target.closest('.chip'); if (b) apply(b.dataset.v); });
+  if (cur && !EMP.some(e => e.name === cur)) cur = '';
+  apply(cur);
+  if (C.length) select(C[0]);
+})();
+</script>

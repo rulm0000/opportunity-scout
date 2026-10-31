@@ -1,0 +1,7 @@
+{
+ "Eli Lilly": {"pattern": "Eli Lilly|Lilly Research|Lilly and Company|Lilly USA|Lilly Corporate|Loxo@Lilly", "pubmed": ["Eli Lilly", "Lilly Research", "Lilly and Company"]},
+ "Pfizer": {"pattern": "Pfizer", "pubmed": ["Pfizer"]},
+ "Merck": {"pattern": "Merck|Sharp & Dohme|Sharp and Dohme", "exclude": "KGaA|Darmstadt|Serono", "pubmed": ["Merck", "Sharp & Dohme"]},
+ "Johnson & Johnson": {"pattern": "Johnson & Johnson|Johnson and Johnson|Janssen", "pubmed": ["Johnson & Johnson", "Janssen"]},
+ "Novartis": {"pattern": "Novartis", "pubmed": ["Novartis"]}
+}

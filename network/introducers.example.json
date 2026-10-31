@@ -1,0 +1,4 @@
+[
+ {"name": "Jane A. Example", "query": "\"Example JA\"[au] AND \"State University\"[ad]", "self_last": ["Example"], "self_first": "Jane"},
+ {"name": "Sam B. Sample", "query": "\"Sample SB\"[au]", "self_last": ["Sample"]}
+]
