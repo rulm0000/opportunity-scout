@@ -1,0 +1,12 @@
+[
+ {"employer": "Eli Lilly", "person": "Alex Target", "title": "Advisor, Real-World Evidence", "closeness": 3, "how": "co-author of Jane Example (2024)",
+  "connector": "Jane A. Example", "connector_exchanges": 120, "path": "You -> Jane Example -> Alex Target (co-authored a 2024 paper)",
+  "evidence": "PMID 00000000 (2024); PMID 00000001 (2026, Eli Lilly and Company)", "evidence_quote": "Eli Lilly and Company, Indianapolis, IN",
+  "confidence": "high", "fact_check": "pass", "fact_note": "", "action": "Ask Jane for a one-line intro."},
+ {"employer": "Eli Lilly", "person": "Pat Insider", "title": "Statistician", "closeness": 4, "how": "met at a job fair", "connector": "",
+  "path": "You -> met Pat at a job fair", "evidence": "your email thread", "confidence": "high", "fact_check": "pass", "action": "Follow up and ask for 15 minutes."},
+ {"employer": "Pfizer", "person": "Robin Peer", "title": "Epidemiologist", "closeness": 3, "how": "co-author of Sam Sample (2021)", "connector": "Sam B. Sample",
+  "connector_exchanges": 4, "path": "You -> Sam Sample -> Robin Peer", "evidence": "PMID 00000002", "confidence": "medium", "fact_check": "pass", "action": "Ask Sam if he knows Robin."},
+ {"employer": "Merck", "person": "Casey Alum", "title": "Outcomes Research", "closeness": 2, "program": "Same department", "how": "alum of your department",
+  "path": "You -> same department -> Casey Alum", "evidence": "PMID 00000003", "confidence": "medium", "fact_check": "", "action": "Message as a fellow alum."}
+]

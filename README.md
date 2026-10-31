@@ -20,6 +20,7 @@ A weekly system that finds grants, industry funding, scholarships and awards, an
 | `agents/` | Instructions for the scheduled Claude task: search agents, the verifier, the retry loop, and the eligibility checklist, with personal details replaced by fill-in fields. |
 | `tracker/` | The tracker page that stores verified opportunities, the ruled-out list, and a run log. |
 | `docs/` | The pipeline figure (PNG and editable PowerPoint). |
+| `network/` | After you apply: finds people at those employers you can reach through collaborators (PubMed co-author sweeps, one-employer deep dives), builds a map of the routes, and stages Outlook intro drafts. Personal data stays local. See `network/README.md`. |
 
 ## Why databases first
 

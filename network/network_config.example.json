@@ -1,0 +1,7 @@
+{
+ "employers_in_order": ["Eli Lilly", "Pfizer", "Merck", "Johnson & Johnson", "Novartis"],
+ "introducers": {"trusted": ["Jane A. Example"], "insider": ["Pat Insider"], "maybe": ["Sam B. Sample"]},
+ "insider_label": "works there · you met them",
+ "leave_out_programs": [],
+ "applications": 5
+}
