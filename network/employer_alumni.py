@@ -2,7 +2,7 @@
 
     python employer_alumni.py --employer "Eli Lilly" --employers employers.json --circles circles.json --since 2022 --out alumni.json
 
-circles.json maps a label to a regex, for example {"UNC": "University of North Carolina|Chapel Hill"}; a PubMed query term for each goes in
+circles.json maps a label to a regex, for example {"State U": "State University|Example City"}; a PubMed query term for each goes in
 "pubmed" (see circles.example.json). Name collisions are common: check each result's past affiliations and topics before using it.
 """
 import argparse, json, re

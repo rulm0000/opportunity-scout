@@ -1,0 +1,19 @@
+{
+ "_note": "Example topics for paper_network.py. Copy to paper_topics.json and write your own. Each query is a PubMed search; {SUFFIX_AD} expands to a company-suffix affiliation filter, the highest-yield way to surface industry authors. Keep each query under 20 boolean operators. exclude_orgs drops organizations you will not work for.",
+ "min_papers": 2,
+ "exclude_orgs": ["Example Tobacco Co", "Example Insurer"],
+ "topics": [
+  {
+   "name": "Diabetes prevention RWE",
+   "queries": [
+    "(\"diabetes prevention\" OR prediabetes) AND (\"real-world\" OR claims OR \"electronic health records\") AND {SUFFIX_AD}"
+   ]
+  },
+  {
+   "name": "Physical activity and digital health",
+   "queries": [
+    "(\"physical activity\" OR wearable OR \"step count\") AND (\"real-world\" OR \"machine learning\" OR \"cost-effectiveness\") AND {SUFFIX_AD}"
+   ]
+  }
+ ]
+}

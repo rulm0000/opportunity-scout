@@ -1,35 +1,333 @@
 {
-  "_note": "Job boards read directly by jobs_feeds.py. type: greenhouse | ashby | lever | workday. For workday give tenant, wd (e.g. wd5), and site from the employer's myworkdayjobs.com careers link.",
+  "_note": "Job boards read directly by jobs_feeds.py. type: greenhouse | ashby | lever | workday. For workday give tenant, wd (e.g. wd5), and site from the employer's myworkdayjobs.com careers link. Boards added 2026-11-01 from the 10-20 and 10-27 runs. New boards found by a run go in the Scout database collection 'boards' (same fields) and are read with --extra; fold them in here when the code is next republished.",
   "employers": [
-    {"name": "Flatiron Health", "type": "greenhouse", "board": "flatironhealth"},
-    {"name": "Komodo Health", "type": "greenhouse", "board": "komodohealth"},
-    {"name": "Oura", "type": "greenhouse", "board": "oura"},
-    {"name": "Recursion", "type": "greenhouse", "board": "recursionpharmaceuticals"},
-    {"name": "Truveta", "type": "greenhouse", "board": "truveta"},
-    {"name": "Omada Health", "type": "greenhouse", "board": "omadahealth"},
-    {"name": "Calico", "type": "greenhouse", "board": "calicolabs"},
-    {"name": "Altos Labs", "type": "greenhouse", "board": "altoslabs"},
-    {"name": "NewLimit", "type": "greenhouse", "board": "newlimit"},
-    {"name": "Natera", "type": "greenhouse", "board": "natera"},
-    {"name": "Eight Sleep", "type": "ashby", "board": "eightsleep"},
-    {"name": "WHOOP", "type": "ashby", "board": "whoop"},
-    {"name": "Levels", "type": "ashby", "board": "levels"},
-    {"name": "Abridge", "type": "ashby", "board": "abridge"},
-    {"name": "OpenEvidence", "type": "ashby", "board": "openevidence"},
-    {"name": "Pfizer", "type": "workday", "tenant": "pfizer", "wd": "wd1", "site": "PfizerCareers"},
-    {"name": "Johnson & Johnson", "type": "workday", "tenant": "jj", "wd": "wd5", "site": "JJ"},
-    {"name": "Merck", "type": "workday", "tenant": "msd", "wd": "wd5", "site": "SearchJobs"},
-    {"name": "Sanofi", "type": "workday", "tenant": "sanofi", "wd": "wd3", "site": "SanofiCareers"},
-    {"name": "AstraZeneca", "type": "workday", "tenant": "astrazeneca", "wd": "wd3", "site": "Careers"},
-    {"name": "GSK", "type": "workday", "tenant": "gsk", "wd": "wd5", "site": "GSKCareers"},
-    {"name": "Amgen", "type": "workday", "tenant": "amgen", "wd": "wd1", "site": "Careers"},
-    {"name": "Gilead", "type": "workday", "tenant": "gilead", "wd": "wd1", "site": "gileadcareers"},
-    {"name": "Biogen", "type": "workday", "tenant": "biibhr", "wd": "wd3", "site": "external"},
-    {"name": "Roche / Genentech", "type": "workday", "tenant": "roche", "wd": "wd3", "site": "roche-ext"},
-    {"name": "IQVIA", "type": "workday", "tenant": "iqvia", "wd": "wd1", "site": "IQVIA"},
-    {"name": "Thermo Fisher (PPD)", "type": "workday", "tenant": "thermofisher", "wd": "wd5", "site": "ThermoFisherCareers"},
-    {"name": "Medtronic", "type": "workday", "tenant": "medtronic", "wd": "wd1", "site": "MedtronicCareers"},
-    {"name": "Dexcom", "type": "workday", "tenant": "dexcom", "wd": "wd1", "site": "Dexcom"}
+    {
+      "name": "Flatiron Health",
+      "type": "greenhouse",
+      "board": "flatironhealth"
+    },
+    {
+      "name": "Komodo Health",
+      "type": "greenhouse",
+      "board": "komodohealth"
+    },
+    {
+      "name": "Oura",
+      "type": "greenhouse",
+      "board": "oura"
+    },
+    {
+      "name": "Recursion",
+      "type": "greenhouse",
+      "board": "recursionpharmaceuticals"
+    },
+    {
+      "name": "Truveta",
+      "type": "greenhouse",
+      "board": "truveta"
+    },
+    {
+      "name": "Omada Health",
+      "type": "greenhouse",
+      "board": "omadahealth"
+    },
+    {
+      "name": "Calico",
+      "type": "greenhouse",
+      "board": "calicolabs"
+    },
+    {
+      "name": "Altos Labs",
+      "type": "greenhouse",
+      "board": "altoslabs"
+    },
+    {
+      "name": "NewLimit",
+      "type": "greenhouse",
+      "board": "newlimit"
+    },
+    {
+      "name": "Natera",
+      "type": "greenhouse",
+      "board": "natera"
+    },
+    {
+      "name": "Eight Sleep",
+      "type": "ashby",
+      "board": "eightsleep"
+    },
+    {
+      "name": "WHOOP",
+      "type": "ashby",
+      "board": "whoop"
+    },
+    {
+      "name": "Levels",
+      "type": "ashby",
+      "board": "levels"
+    },
+    {
+      "name": "Abridge",
+      "type": "ashby",
+      "board": "abridge"
+    },
+    {
+      "name": "OpenEvidence",
+      "type": "ashby",
+      "board": "openevidence"
+    },
+    {
+      "name": "Pfizer",
+      "type": "workday",
+      "tenant": "pfizer",
+      "wd": "wd1",
+      "site": "PfizerCareers"
+    },
+    {
+      "name": "Johnson & Johnson",
+      "type": "workday",
+      "tenant": "jj",
+      "wd": "wd5",
+      "site": "JJ"
+    },
+    {
+      "name": "Merck",
+      "type": "workday",
+      "tenant": "msd",
+      "wd": "wd5",
+      "site": "SearchJobs"
+    },
+    {
+      "name": "Sanofi",
+      "type": "workday",
+      "tenant": "sanofi",
+      "wd": "wd3",
+      "site": "SanofiCareers"
+    },
+    {
+      "name": "AstraZeneca",
+      "type": "workday",
+      "tenant": "astrazeneca",
+      "wd": "wd3",
+      "site": "Careers"
+    },
+    {
+      "name": "GSK",
+      "type": "workday",
+      "tenant": "gsk",
+      "wd": "wd5",
+      "site": "GSKCareers"
+    },
+    {
+      "name": "Amgen",
+      "type": "workday",
+      "tenant": "amgen",
+      "wd": "wd1",
+      "site": "Careers"
+    },
+    {
+      "name": "Gilead",
+      "type": "workday",
+      "tenant": "gilead",
+      "wd": "wd1",
+      "site": "gileadcareers"
+    },
+    {
+      "name": "Biogen",
+      "type": "workday",
+      "tenant": "biibhr",
+      "wd": "wd3",
+      "site": "external"
+    },
+    {
+      "name": "Roche / Genentech",
+      "type": "workday",
+      "tenant": "roche",
+      "wd": "wd3",
+      "site": "roche-ext"
+    },
+    {
+      "name": "IQVIA",
+      "type": "workday",
+      "tenant": "iqvia",
+      "wd": "wd1",
+      "site": "IQVIA"
+    },
+    {
+      "name": "Thermo Fisher (PPD)",
+      "type": "workday",
+      "tenant": "thermofisher",
+      "wd": "wd5",
+      "site": "ThermoFisherCareers"
+    },
+    {
+      "name": "Medtronic",
+      "type": "workday",
+      "tenant": "medtronic",
+      "wd": "wd1",
+      "site": "MedtronicCareers"
+    },
+    {
+      "name": "Dexcom",
+      "type": "workday",
+      "tenant": "dexcom",
+      "wd": "wd1",
+      "site": "Dexcom"
+    },
+    {
+      "name": "RTI International",
+      "type": "greenhouse",
+      "board": "rti"
+    },
+    {
+      "name": "HealthVerity",
+      "type": "greenhouse",
+      "board": "healthverity"
+    },
+    {
+      "name": "Novartis",
+      "type": "workday",
+      "tenant": "novartis",
+      "wd": "wd3",
+      "site": "Novartis_Careers"
+    },
+    {
+      "name": "Abbott",
+      "type": "workday",
+      "tenant": "abbott",
+      "wd": "wd5",
+      "site": "abbottcareers"
+    },
+    {
+      "name": "Regeneron",
+      "type": "workday",
+      "tenant": "regeneron",
+      "wd": "wd1",
+      "site": "Careers"
+    },
+    {
+      "name": "Moderna",
+      "type": "workday",
+      "tenant": "modernatx",
+      "wd": "wd1",
+      "site": "M_tx"
+    },
+    {
+      "name": "Labcorp",
+      "type": "workday",
+      "tenant": "labcorp",
+      "wd": "wd1",
+      "site": "External"
+    },
+    {
+      "name": "ICON",
+      "type": "workday",
+      "tenant": "icon",
+      "wd": "wd3",
+      "site": "broadbean_external"
+    },
+    {
+      "name": "Illumina",
+      "type": "workday",
+      "tenant": "illumina",
+      "wd": "wd1",
+      "site": "illumina-careers"
+    },
+    {
+      "name": "Precision AQ",
+      "type": "greenhouse",
+      "board": "precisionaq"
+    },
+    {
+      "name": "Virta Health",
+      "type": "ashby",
+      "board": "virtahealth"
+    },
+    {
+      "name": "Twin Health",
+      "type": "greenhouse",
+      "board": "twinhealth"
+    },
+    {
+      "name": "Hinge Health",
+      "type": "ashby",
+      "board": "hinge-health"
+    },
+    {
+      "name": "Science 37",
+      "type": "greenhouse",
+      "board": "science37"
+    },
+    {
+      "name": "Superpower",
+      "type": "ashby",
+      "board": "superpower"
+    },
+    {
+      "name": "Aledade",
+      "type": "lever",
+      "board": "aledade"
+    },
+    {
+      "name": "PathAI",
+      "type": "greenhouse",
+      "board": "pathai"
+    },
+    {
+      "name": "Owkin",
+      "type": "ashby",
+      "board": "owkin"
+    },
+    {
+      "name": "insitro",
+      "type": "ashby",
+      "board": "insitro"
+    },
+    {
+      "name": "Sword Health",
+      "type": "greenhouse",
+      "board": "swordhealth"
+    },
+    {
+      "name": "Lark",
+      "type": "ashby",
+      "board": "lark"
+    },
+    {
+      "name": "Freenome",
+      "type": "greenhouse",
+      "board": "freenome"
+    },
+    {
+      "name": "Adelphi Real World",
+      "type": "greenhouse",
+      "board": "adelphirealworld"
+    },
+    {
+      "name": "Eli Lilly",
+      "type": "workday",
+      "tenant": "lilly",
+      "wd": "wd115",
+      "site": "CMP"
+    }
   ],
-  "workdaySearches": ["epidemiology", "biostatistics", "real world evidence", "outcomes research", "health economics", "behavioral science", "data scientist", "postdoctoral"]
+  "workdaySearches": [
+    "epidemiology",
+    "biostatistics",
+    "real world evidence",
+    "outcomes research",
+    "health economics",
+    "behavioral science",
+    "data scientist",
+    "postdoctoral"
+  ],
+  "internshipSearches": [
+    "intern",
+    "internship",
+    "co-op",
+    "summer 2027",
+    "doctoral",
+    "PhD",
+    "fellow"
+  ]
 }

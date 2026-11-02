@@ -4,255 +4,972 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: one column. Last-run line, filter bar, then verified opportunities sorted by deadline; ruled-out list folded at the end. */
+/* Layout: one column under a sticky tab bar. Overview first (what needs you next), then one tab each for
+   opportunities, applications, network and meetings. Employer pages tie the four together. */
 :root {
   --bg: #f6f8fa;
   --surface: #ffffff;
+  --sunk: #eef2f6;
   --fg: #16212c;
   --muted: #566573;
   --line: #d9e1e8;
+  --line-strong: #8b9aa8;
   --accent: #1f6fa8;
   --accent-soft: #e3eef7;
+  --ink: #1d2b38;
+  --on-ink: #ffffff;
   --good: #1d7a4a;
   --good-soft: #e1f2e8;
   --warn: #9a5b00;
   --warn-soft: #fbefd9;
   --bad: #a3312b;
+  --bad-soft: #f8e4e2;
+  /* network map: orange = people you know; blues = closeness through others */
+  --direct: #c2571a; --c3: #4b9cd3; --c2: #93c1e2; --c1: #c9ddec; --edge: #9fb3c3; --hilite: #f2c14e;
   --font-display: "Public Sans", "Segoe UI", system-ui, sans-serif;
   --font-body: "Public Sans", "Segoe UI", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0f151b; --surface: #161e26; --fg: #e4ebf1; --muted: #9aaab8; --line: #2a3742;
-    --accent: #7cb8e6; --accent-soft: #1b2c3a; --good: #6fd09b; --good-soft: #15291f;
-    --warn: #f0b860; --warn-soft: #2e2414; --bad: #f08a83; color-scheme: dark;
+    --bg: #0f151b; --surface: #161e26; --sunk: #121920; --fg: #e4ebf1; --muted: #9aaab8; --line: #2a3742; --line-strong: #5f7182;
+    --accent: #7cb8e6; --accent-soft: #1b2c3a; --ink: #c9d6e2; --on-ink: #0f151b;
+    --good: #6fd09b; --good-soft: #15291f; --warn: #f0b860; --warn-soft: #2e2414; --bad: #f08a83; --bad-soft: #321b1a; color-scheme: dark;
+    --direct: #f08a4b; --c3: #4b9cd3; --c2: #2f6e9c; --c1: #24506f; --edge: #3d5464; --hilite: #f2c14e;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0f151b; --surface: #161e26; --fg: #e4ebf1; --muted: #9aaab8; --line: #2a3742;
-  --accent: #7cb8e6; --accent-soft: #1b2c3a; --good: #6fd09b; --good-soft: #15291f;
-  --warn: #f0b860; --warn-soft: #2e2414; --bad: #f08a83; color-scheme: dark;
+  --bg: #0f151b; --surface: #161e26; --sunk: #121920; --fg: #e4ebf1; --muted: #9aaab8; --line: #2a3742; --line-strong: #5f7182;
+  --accent: #7cb8e6; --accent-soft: #1b2c3a; --ink: #c9d6e2; --on-ink: #0f151b;
+  --good: #6fd09b; --good-soft: #15291f; --warn: #f0b860; --warn-soft: #2e2414; --bad: #f08a83; --bad-soft: #321b1a; color-scheme: dark;
+  --direct: #f08a4b; --c3: #4b9cd3; --c2: #2f6e9c; --c1: #24506f; --edge: #3d5464; --hilite: #f2c14e;
 }
 body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
-.wrap { max-width: 920px; margin: 0 auto; padding-block: 32px 56px;
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+.wrap { max-width: 960px; margin: 0 auto; padding-block: 20px 56px;
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
-  display: grid; gap: 24px; }
+  display: grid; gap: 20px; }
 h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
-h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.01em; }
+h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.01em; }
 h2 { font-size: 1.0625rem; font-weight: 700; }
+h3 { font-size: 0.9375rem; font-weight: 700; }
 p { margin: 0; max-width: 68ch; }
 a { color: var(--accent); }
-:is(a, button, select, summary):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+:is(a, button, select, summary, input, textarea):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 .eyebrow { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-header { display: grid; gap: 8px; }
 .lede { color: var(--muted); }
-.runline { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 0.875rem; color: var(--muted); font-variant-numeric: tabular-nums; }
-.runline b { color: var(--fg); font-weight: 600; }
+.small { font-size: 0.8125rem; }
+.mono { font-family: var(--font-mono); font-size: 0.78rem; }
+.num { font-variant-numeric: tabular-nums; }
 
-.filters { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; }
-.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface); }
-.seg button { font: inherit; font-size: 0.8125rem; font-weight: 600; padding: 6px 11px; border: 0; border-right: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; }
-.seg button:last-child { border-right: 0; }
-.seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
-.seg .n { font-weight: 500; opacity: 0.8; margin-left: 4px; font-variant-numeric: tabular-nums; }
+/* Top bar and tabs */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+.top-in { max-width: 960px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 20px; padding-block: 10px 0; }
+.brand { display: grid; gap: 0; padding-bottom: 8px; }
+.brand b { font-family: var(--font-display); font-size: 1.05rem; }
+.brand span { font-size: 0.75rem; color: var(--muted); }
+.tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; flex: 1 1 auto; min-width: 0; }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs a { text-decoration: none; color: var(--muted); font-weight: 600; font-size: 0.875rem; padding: 8px 12px 10px; border-bottom: 2px solid transparent; white-space: nowrap; }
+.tabs a:hover { color: var(--fg); }
+.tabs a[aria-current="page"] { color: var(--accent); border-bottom-color: var(--accent); }
+.tabs .n { font-weight: 500; color: var(--muted); margin-left: 5px; font-variant-numeric: tabular-nums; font-size: 0.78rem; }
 
+/* Generic pieces */
+.sect { display: grid; gap: 10px; }
+.sect > h2 { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.sect > h2 .lede { font-weight: 400; font-size: 0.875rem; }
 .list { display: grid; gap: 10px; }
-.opp { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
-.opp.dim { opacity: 0.6; }
-.opp .main { display: grid; gap: 6px; min-width: 0; }
-.opp h3 { font-size: 1rem; font-weight: 600; }
-.opp h3 a { text-decoration: none; }
-.opp h3 a:hover { text-decoration: underline; }
-.meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 0.8125rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; display: grid; gap: 8px; min-width: 0; }
+.card.dim { opacity: 0.62; }
+.row2 { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; align-items: start; }
+.row2 > .main { display: grid; gap: 6px; min-width: 0; }
+.row2 > .side { display: grid; gap: 6px; justify-items: end; text-align: right; }
+.card h3 a, .ttl a { text-decoration: none; }
+.card h3 a:hover, .ttl a:hover { text-decoration: underline; }
+.meta { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 0.8125rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .meta .amt { color: var(--fg); font-weight: 600; }
+.meta a { color: inherit; text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 2px; }
+.meta a:hover { color: var(--accent); }
 .why { font-size: 0.875rem; }
 .confirm { font-size: 0.8125rem; color: var(--warn); background: var(--warn-soft); border-radius: 6px; padding: 6px 10px; }
-.side { display: grid; gap: 6px; justify-items: end; text-align: right; }
+.next { font-size: 0.8125rem; background: var(--accent-soft); color: var(--fg); border-radius: 6px; padding: 6px 10px; }
+.next b { color: var(--accent); }
+.warm { font-size: 0.8125rem; color: var(--good); }
+.warm a { color: inherit; }
 .due { font-size: 0.8125rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .due.soon { color: var(--warn); font-weight: 600; }
 .due.past { color: var(--bad); font-weight: 600; }
-select { font: inherit; font-size: 0.8125rem; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--fg); }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 1px 8px; border-radius: 999px; white-space: nowrap; }
 .chip.cat { background: var(--accent-soft); color: var(--accent); }
 .chip.ok { background: var(--good-soft); color: var(--good); }
 .chip.check { background: var(--warn-soft); color: var(--warn); }
-.mono { font-family: var(--font-mono); font-size: 0.78rem; }
-@media (max-width: 560px) {
-  .opp { grid-template-columns: 1fr; }
-  .side { justify-items: start; text-align: left; grid-auto-flow: column; justify-content: space-between; align-items: center; }
+.chip.no { background: var(--bad-soft); color: var(--bad); }
+.chip.out { background: var(--line); color: var(--muted); }
+.empty { background: var(--surface); border: 1px dashed var(--line); border-radius: 8px; padding: 20px; display: grid; gap: 6px; color: var(--muted); }
+.empty b { color: var(--fg); }
+.err { color: var(--bad); font-size: 0.8125rem; }
+.back { font-size: 0.875rem; text-decoration: none; }
+.back:hover { text-decoration: underline; }
+
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface); }
+.seg button { font: inherit; font-size: 0.8125rem; font-weight: 600; padding: 6px 11px; border: 0; border-right: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
+.seg .n { font-weight: 500; opacity: 0.8; margin-left: 4px; font-variant-numeric: tabular-nums; }
+.filters { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; }
+.search { font: inherit; font-size: 0.875rem; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--fg); min-width: 0; width: 220px; max-width: 100%; }
+
+.marks { display: inline-flex; flex-wrap: wrap; max-width: 100%; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface); }
+.marks button { font: inherit; font-size: 0.78rem; font-weight: 600; padding: 6px 10px; min-height: 32px; border: 0; border-right: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.marks button:last-child { border-right: 0; }
+.marks button:hover:not(:disabled) { background: var(--accent-soft); color: var(--accent); }
+.marks button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
+.marks button[aria-pressed="true"][data-v="applied"], .marks button[aria-pressed="true"][data-v="done"] { background: var(--good); }
+.marks button[aria-pressed="true"][data-v="dismissed"], .marks button[aria-pressed="true"][data-v="cancelled"] { background: var(--muted); }
+.marks button:disabled { cursor: default; opacity: 0.6; }
+select.stage { font: inherit; font-size: 0.8125rem; font-weight: 600; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--fg); }
+
+.path { display: flex; gap: 6px; align-items: center; min-width: 0; }
+.path input { flex: 1 1 auto; min-width: 0; font-family: var(--font-mono); font-size: 0.75rem; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--sunk); color: var(--fg); }
+.btn { font: inherit; font-size: 0.78rem; font-weight: 600; padding: 5px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--accent); cursor: pointer; white-space: nowrap; text-decoration: none; display: inline-block; }
+.btn:hover { background: var(--accent-soft); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.btn.primary:hover { filter: brightness(1.08); }
+
+details.fold { border-top: 1px solid var(--line); padding-top: 14px; }
+details.fold > summary { cursor: pointer; font-weight: 600; font-family: var(--font-display); }
+.ruled, .cov { display: grid; gap: 8px; margin-top: 12px; font-size: 0.875rem; }
+.ruled div, .cov div { display: grid; gap: 2px; }
+.ruled .r, .cov .r { color: var(--muted); font-size: 0.8125rem; }
+
+/* Overview */
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; display: grid; gap: 2px; text-decoration: none; color: var(--fg); }
+.tile:hover { border-color: var(--accent); }
+.tile .k { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.tile .v { font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.tile .s { font-size: 0.8125rem; color: var(--muted); }
+@media (max-width: 720px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.agenda { display: grid; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.ag { display: grid; grid-template-columns: 92px 112px minmax(0, 1fr); gap: 4px 12px; padding: 10px 14px; border-bottom: 1px solid var(--line); text-decoration: none; color: var(--fg); align-items: baseline; }
+.ag:last-child { border-bottom: 0; }
+.ag:hover { background: var(--sunk); }
+.ag .d { font-size: 0.8125rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ag .d.soon { color: var(--warn); }
+.ag .d.past { color: var(--bad); }
+.ag .t { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.ag .x { font-size: 0.875rem; min-width: 0; }
+.ag .x small { display: block; color: var(--muted); font-size: 0.8125rem; }
+@media (max-width: 560px) { .ag { grid-template-columns: 1fr; } }
+.agents { display: grid; gap: 6px; font-size: 0.8125rem; color: var(--muted); }
+.agents div { display: flex; flex-wrap: wrap; gap: 2px 10px; }
+.agents b { color: var(--fg); font-weight: 600; }
+
+/* Applications */
+.pipe { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.8125rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.pipe b { color: var(--fg); }
+
+/* Network */
+.grp { display: grid; gap: 4px; }
+.grp-h { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; justify-content: space-between; }
+.grp-h a { text-decoration: none; color: var(--fg); }
+.grp-h a:hover { color: var(--accent); }
+.people { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 2px 14px; }
+.person { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; font-size: 0.875rem; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.person:last-child { border-bottom: 0; }
+.person .r { color: var(--muted); font-size: 0.8125rem; grid-column: 1 / -1; }
+.person .sel { user-select: all; }
+
+/* Network map: You -> how you reach them -> person -> employer */
+.netgrid { --nw: min(1320px, calc(100vw - 48px)); display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); gap: 14px; align-items: start; width: max(100%, var(--nw)); margin-left: min(0px, calc((100% - var(--nw)) / 2)); }
+@media (max-width: 900px) { .netgrid { grid-template-columns: 1fr; } }
+.mapwrap { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; min-width: 0; overflow: hidden; }
+.mapbox { overflow: auto; max-height: 76vh; }
+.mapbox svg { display: block; width: 100%; min-width: 700px; height: auto; }
+.mapbox text { fill: var(--fg); font-family: var(--font-body); }
+.m-col { font: 600 10px var(--font-mono); fill: var(--muted); letter-spacing: 0.08em; }
+.m-edge { fill: none; stroke: var(--edge); }
+.m-edge.direct { stroke: var(--direct); }
+.m-edge.hub { stroke: var(--accent); opacity: 0.55; }
+.m-edge.later { opacity: 0.45; }
+.m-node { cursor: pointer; stroke: var(--surface); stroke-width: 1.5; }
+.m-hub { fill: var(--surface); stroke: var(--ink); stroke-width: 1.5; cursor: pointer; }
+.m-emp { cursor: pointer; }
+.m-hl { font: 600 10.5px var(--font-body); }
+.m-sub { font: 500 9.5px var(--font-mono); fill: var(--muted) !important; }
+.m-pl { font: 500 10.5px var(--font-body); pointer-events: none; }
+.m-pl.on { font-weight: 700; }
+.m-pl.off { fill: var(--muted) !important; }
+.m-el { font: 600 12px var(--font-body); cursor: pointer; }
+.m-hl, .m-sub, .m-pl, .m-el, .m-col { paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
+.m-dim { opacity: 0.12; }
+.m-sel { stroke: var(--hilite) !important; stroke-width: 3 !important; }
+.mlegend { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 10px 14px; border-top: 1px solid var(--line); font-size: 0.75rem; color: var(--muted); }
+.mlegend span { display: inline-flex; align-items: center; gap: 6px; }
+.mdot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.ndetail { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 64px); }
+.ndetail .who { font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; margin: 0; }
+.ndetail dl { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 6px 10px; margin: 0; font-size: 0.84rem; }
+.ndetail dt { color: var(--muted); }
+.ndetail dd { margin: 0; overflow-wrap: anywhere; }
+.echips { display: flex; flex-wrap: wrap; gap: 6px; }
+.echips button { font: inherit; font-size: 0.78rem; font-weight: 600; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; }
+.echips button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
+.echips .n { font-weight: 500; opacity: 0.75; margin-left: 4px; }
+
+/* Meetings */
+.mtg { display: grid; grid-template-columns: 84px minmax(0, 1fr) auto; gap: 6px 16px; align-items: start; text-decoration: none; color: var(--fg); }
+.mtg:hover h3 { color: var(--accent); }
+.cal { border: 1px solid var(--line); border-radius: 8px; text-align: center; padding: 6px 4px; background: var(--sunk); font-variant-numeric: tabular-nums; }
+.cal .w { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); display: block; }
+.cal .dd { font-family: var(--font-display); font-size: 1.35rem; font-weight: 700; display: block; line-height: 1.2; }
+.cal .tm { font-size: 0.72rem; color: var(--muted); display: block; }
+.cal.unset .dd { font-size: 0.875rem; padding: 6px 0; color: var(--muted); }
+@media (max-width: 560px) { .mtg { grid-template-columns: 70px minmax(0, 1fr); } .mtg .side { grid-column: 1 / -1; justify-items: start; text-align: left; } }
+
+.detail { display: grid; gap: 22px; }
+.dhead { display: grid; gap: 8px; }
+.dhead h1 { font-size: 1.5rem; }
+.dhead .meta { font-size: 0.875rem; }
+.dsec { display: grid; gap: 10px; }
+.dsec > h2 { padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+.tbl { overflow-x: auto; }
+.tbl table { border-collapse: collapse; width: 100%; font-size: 0.875rem; }
+.tbl th { text-align: left; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding: 6px 10px 6px 0; border-bottom: 1px solid var(--line); }
+.tbl td { padding: 7px 10px 7px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+.tbl td:first-child { white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--muted); }
+.bul { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 0.9rem; max-width: 72ch; }
+
+/* Bridge diagram: their work -> shared idea -> your work */
+.bridge { display: grid; gap: 10px; }
+.bh, .brow { display: grid; grid-template-columns: 30px minmax(0, 1fr) minmax(110px, 0.75fr) minmax(0, 1fr); align-items: center; }
+.bh span { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.bh span:nth-child(3) { text-align: center; }
+.bn { width: 24px; height: 24px; border-radius: 50%; background: var(--ink); color: var(--on-ink); font-size: 0.78rem; font-weight: 700; display: grid; place-items: center; font-variant-numeric: tabular-nums; }
+.bnode { border: 1.5px solid var(--ink); border-radius: 10px; background: var(--surface); padding: 9px 12px; display: grid; gap: 2px; min-width: 0; }
+.bnode b { font-size: 0.875rem; line-height: 1.3; }
+.bnode span { font-size: 0.78rem; color: var(--muted); line-height: 1.35; }
+.bmid { position: relative; display: flex; justify-content: center; align-items: center; padding: 0 14px 0 8px; min-height: 40px; }
+.bmid::before { content: ""; position: absolute; left: 0; right: 7px; top: 50%; border-top: 1.5px solid var(--line-strong); }
+.bmid::after { content: ""; position: absolute; right: 0; top: 50%; transform: translateY(-50%); border: 5px solid transparent; border-left: 8px solid var(--line-strong); border-right: 0; }
+.bmid span { position: relative; z-index: 1; background: var(--sunk); border: 1px solid var(--line); border-radius: 9px; padding: 5px 8px; font-size: 0.78rem; font-weight: 700; text-align: center; line-height: 1.3; }
+@media (max-width: 640px) {
+  .bh { display: none; }
+  .brow { grid-template-columns: 30px minmax(0, 1fr); row-gap: 0; }
+  .brow .bnode, .brow .bmid { grid-column: 2; }
+  .brow .bn { grid-row: 1; align-self: start; margin-top: 8px; }
+  .bmid { justify-content: flex-start; padding: 8px 0 8px 18px; min-height: 0; }
+  .bmid::before { left: 9px; right: auto; top: 0; bottom: 6px; border-top: 0; border-left: 1.5px solid var(--line-strong); }
+  .bmid::after { left: 4px; right: auto; top: auto; bottom: 0; transform: none; border: 5px solid transparent; border-top: 7px solid var(--line-strong); border-bottom: 0; }
 }
 
-.empty { background: var(--surface); border: 1px dashed var(--line); border-radius: 8px; padding: 24px; display: grid; gap: 6px; color: var(--muted); }
-.empty b { color: var(--fg); }
-details { border-top: 1px solid var(--line); padding-top: 16px; }
-summary { cursor: pointer; font-weight: 600; font-family: var(--font-display); }
-.ruled { display: grid; gap: 8px; margin-top: 12px; font-size: 0.875rem; }
-.ruled div { display: grid; gap: 2px; }
-.ruled .r { color: var(--muted); font-size: 0.8125rem; }
-.notes { color: var(--muted); font-size: 0.8125rem; display: grid; gap: 6px; }
-.err { color: var(--bad); font-size: 0.8125rem; }
+.qs { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; counter-reset: q; }
+.qs li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 10px; align-items: start; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; counter-increment: q; }
+.qs li::before { content: counter(q); width: 24px; height: 24px; border-radius: 50%; background: var(--ink); color: var(--on-ink); font-size: 0.78rem; font-weight: 700; display: grid; place-items: center; font-variant-numeric: tabular-nums; }
+.qs li.asked { opacity: 0.6; }
+.qs .qt { font-size: 0.9rem; }
+.qs .qt b { display: block; font-size: 0.8125rem; color: var(--accent); }
+.qs label { font-size: 0.75rem; color: var(--muted); display: inline-flex; gap: 4px; align-items: center; cursor: pointer; white-space: nowrap; }
+.quote { border-left: 3px solid var(--line-strong); padding: 4px 0 4px 14px; display: grid; gap: 8px; font-size: 0.9rem; max-width: 70ch; }
+textarea.notes { font: inherit; font-size: 0.9rem; width: 100%; min-height: 120px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--fg); resize: vertical; box-sizing: border-box; }
+.srcs { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 0.8125rem; }
+
+footer.notes { color: var(--muted); font-size: 0.8125rem; display: grid; gap: 6px; border-top: 1px solid var(--line); padding-top: 14px; }
+@media (max-width: 560px) {
+  .row2 { grid-template-columns: 1fr; }
+  .row2 > .side { justify-items: start; text-align: left; }
+}
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
-<div class="wrap">
-  <header>
-    <div class="eyebrow">Grants, industry funding, scholarships, jobs</div>
-    <h1>Opportunity Scout</h1>
-    <p class="lede">Only opportunities an independent check found you eligible for, or nearly eligible with one thing to confirm. Every item was verified on the funder's or employer's own page.</p>
-    <div class="runline" id="runline">Loading the latest run…</div>
-  </header>
-
-  <div class="filters">
-    <div class="seg" role="group" aria-label="Category" id="cats"></div>
-    <div class="seg" role="group" aria-label="Status" id="stats"></div>
+<div class="top">
+  <div class="top-in">
+    <div class="brand"><b>Opportunity Scout</b><span id="brandline">Opportunities, applications, people and meetings</span></div>
+    <nav class="tabs" id="tabs" aria-label="Sections">
+      <a href="#overview" data-tab="overview">Overview</a>
+      <a href="#opportunities" data-tab="opportunities">Opportunities<span class="n" id="n-opps"></span></a>
+      <a href="#applications" data-tab="applications">Applications<span class="n" id="n-apps"></span></a>
+      <a href="#network" data-tab="network">Network<span class="n" id="n-net"></span></a>
+      <a href="#meetings" data-tab="meetings">Meetings<span class="n" id="n-mtg"></span></a>
+    </nav>
   </div>
-
-  <div class="list" id="list">
-    <div class="empty"><b>Loading opportunities…</b><span>If this stays empty, open the tracker in Claude so it can reach its saved data.</span></div>
-  </div>
-  <div class="err" id="err" hidden></div>
-
-  <details id="ruled-wrap">
-    <summary>Ruled out <span id="ruled-count" class="lede" style="font-weight:400"></span></summary>
-    <div class="ruled" id="ruled"><span class="lede">Open to load.</span></div>
-  </details>
-
-  <footer class="notes">
-    <span>Updated every Tuesday morning by the weekly opportunity scout: direct pulls from the full Grants.gov database (scored with GROW), the NIH and NSF feeds, and employer job boards; search agents for sources with no database; then a separate verifier that checks each find against your eligibility criteria.</span>
-    <span>Your status choices save here and the scout leaves them alone.</span>
-  </footer>
 </div>
 
-<script>
-const CATS = [
-  { key: 'all', label: 'All' },
-  { key: 'grant', label: 'Grants' },
-  { key: 'industry', label: 'Industry' },
-  { key: 'scholarship', label: 'Scholarships & awards' },
-  { key: 'job', label: 'Jobs' }
-];
-const STATUSES = [
-  { key: 'active', label: 'Open' },
-  { key: 'applied', label: 'Applied' },
-  { key: 'dismissed', label: 'Not for me' }
-];
-const STATUS_OPTIONS = [['new', 'New'], ['interested', 'Interested'], ['applied', 'Applied'], ['dismissed', 'Not for me']];
-const CAT_LABEL = { grant: 'Grant', industry: 'Industry', scholarship: 'Scholarship / award', job: 'Job' };
+<main class="wrap">
+  <div id="view">
+    <div class="empty"><b>Loading your dashboard…</b><span>If this stays empty, open the page in Claude while signed in so it can reach its saved data.</span></div>
+  </div>
+  <div class="err" id="err" hidden></div>
+  <footer class="notes" id="foot">
+    <span>Scheduled agents fill this page. Your own choices (status, stage, questions asked, notes) save here and the agents leave them alone.</span>
+  </footer>
+</main>
 
-let view = { cat: 'all', status: 'active' };
-try { const s = JSON.parse(localStorage.getItem('scout-view') || 'null'); if (s && s.cat && s.status) view = s; } catch (e) {}
-let opps = [];
+<script>
+/* ---------- constants ---------- */
+const CATS = [['all', 'All'], ['grant', 'Grants'], ['industry', 'Industry'], ['internship', 'Internships'], ['job', 'Jobs'], ['scholarship', 'Scholarships & awards']];
+const CAT_LABEL = { grant: 'Grant', industry: 'Industry', scholarship: 'Scholarship / award', job: 'Job', internship: 'Internship' };
+const OSTAT = [['active', 'Open'], ['applied', 'Applied'], ['dismissed', 'Not for me']];
+const MARKS = [['interested', 'Interested'], ['applied', 'Applied'], ['dismissed', 'Not for me']];
+const STAGES = [['preparing', 'Preparing'], ['submitted', 'Submitted'], ['in_review', 'In review'], ['interview', 'Interviewing'], ['offer', 'Offer'], ['not_selected', 'Not selected'], ['withdrawn', 'Withdrawn']];
+const STAGE_LABEL = Object.fromEntries(STAGES);
+const CLOSED_STAGES = new Set(['not_selected', 'withdrawn']);
+const AFILT = [['active', 'In progress'], ['action', 'Needs you'], ['closed', 'Closed'], ['all', 'All']];
+const CSTAT = { not_asked: 'Not asked yet', draft: 'Draft staged', asked: 'Asked', agreed: 'Intro agreed', introduced: 'Introduced', replied: 'Replied', met: 'Met' };
+const MOTION = new Set(['draft', 'asked', 'agreed', 'introduced', 'replied']);
+const NFILT = [['motion', 'In motion'], ['met', 'Met'], ['not_asked', 'Not asked'], ['all', 'All']];
+const MSTAT = [['requested', 'To schedule'], ['scheduled', 'Scheduled'], ['done', 'Done'], ['followed_up', 'Thanked'], ['cancelled', 'Cancelled']];
+const MSTAT_LABEL = Object.fromEntries(MSTAT);
+const PREP_LABEL = { needed: 'Prep coming', ready: 'Prep ready', updated: 'Prep updated' };
+const AGENTS = [
+  { col: 'runs', label: 'Opportunity scout', line: r => { const t = r.totals || {}; return `${t.candidates ?? 0} checked, ${t.eligible ?? 0} eligible, ${t.confirm ?? 0} to confirm`; } },
+  { col: 'internship_runs', label: 'Internship scout', line: r => [r.newRows != null ? `${r.newRows} new rows` : '', r.statusChanges || ''].filter(Boolean).join(' · ') },
+  { col: 'replycheck_runs', label: 'Reply check', line: r => [r.newReplies != null ? `${r.newReplies} new replies` : '', r.draftsStaged != null ? `${r.draftsStaged} drafts staged` : '', r.deviceReached === false ? 'computer not reached' : ''].filter(Boolean).join(' · ') },
+  { col: 'meeting_runs', label: 'Meeting prep', line: r => [r.meetingsFound != null ? `${r.meetingsFound} meetings found` : '', r.briefsWritten != null ? `${r.briefsWritten} briefs written` : ''].filter(Boolean).join(' · ') }
+];
+
+/* ---------- state ---------- */
+const S = { opps: [], watch: [], contacts: [], meetings: [], settings: {}, runs: {}, got: new Set() };
 let db = null;
 const writing = new Set();
+const UI = { ocat: 'all', ostat: 'active', wview: 'soon', afilt: 'active', nfilt: 'all', nemp: '', nq: '' };
+const NET = { sel: '', route: '' };
+try { const s = JSON.parse(localStorage.getItem('scout-ui') || 'null'); if (s && typeof s === 'object') Object.assign(UI, s, { nq: '' }); } catch (e) {}
+function saveUI() { try { localStorage.setItem('scout-ui', JSON.stringify(UI)); } catch (e) {} }
 
+/* ---------- helpers ---------- */
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const safeUrl = u => /^https?:\/\//i.test(String(u || '')) ? String(u) : '';
+const hid = s => String(s ?? '').replace(/[^A-Za-z0-9-]/g, '-');
+const link = (u, text) => { const s = safeUrl(u); return s ? `<a href="${esc(s)}" target="_blank" rel="noopener">${esc(text)}</a>` : esc(text); };
+const today0 = () => { const t = new Date(); t.setHours(0, 0, 0, 0); return t; };
+const isoDay = d => /^\d{4}-\d{2}-\d{2}$/.test(String(d || ''));
+const todayStr = () => { const t = new Date(); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`; };
+function dayDiff(d) { if (!isoDay(d)) return Infinity; const [y, m, dd] = d.split('-').map(Number); return Math.round((new Date(y, m - 1, dd) - today0()) / 86400000); }
+function fmtDay(d, withYear) { if (!isoDay(d)) return String(d || ''); const [y, m, dd] = d.split('-').map(Number); return new Date(y, m - 1, dd).toLocaleDateString('en-US', withYear ? { month: 'short', day: 'numeric', year: 'numeric' } : { month: 'short', day: 'numeric' }); }
 function dueInfo(d) {
-  if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return { text: d ? String(d) : 'Rolling', days: Infinity, cls: '' };
-  const [y, m, dd] = d.split('-').map(Number);
-  const due = new Date(y, m - 1, dd); const t = new Date(); t.setHours(0, 0, 0, 0);
-  const days = Math.round((due - t) / 86400000);
-  const text = due.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  if (!d) return { text: 'Rolling', days: Infinity, cls: '' };
+  if (!isoDay(d)) return { text: String(d), days: Infinity, cls: '' };
+  const days = dayDiff(d); const text = fmtDay(d, true);
   if (days < 0) return { text: text + ' · closed', days, cls: 'past' };
   if (days <= 30) return { text: text + ' · ' + (days === 0 ? 'today' : days === 1 ? 'tomorrow' : days + ' days'), days, cls: 'soon' };
   return { text, days, cls: '' };
 }
-function statusBucket(o) { const s = o.status || 'new'; return s === 'applied' ? 'applied' : s === 'dismissed' ? 'dismissed' : 'active'; }
-function saveView() { try { localStorage.setItem('scout-view', JSON.stringify(view)); } catch (e) {} }
+function shortDue(d) { const n = dayDiff(d); if (n === Infinity) return { text: d ? String(d) : 'No date', cls: '' }; return { text: n === 0 ? 'Today' : n === 1 ? 'Tomorrow' : n < 0 ? fmtDay(d) + ' (past)' : fmtDay(d), cls: n < 0 ? 'past' : n <= 7 ? 'soon' : '' }; }
 
-function renderFilters() {
-  const byStatus = opps.filter(o => statusBucket(o) === view.status);
-  $('cats').innerHTML = CATS.map(c => {
-    const n = c.key === 'all' ? byStatus.length : byStatus.filter(o => o.category === c.key).length;
-    return `<button type="button" data-cat="${c.key}" aria-pressed="${view.cat === c.key}">${esc(c.label)}<span class="n">${n}</span></button>`;
-  }).join('');
-  $('stats').innerHTML = STATUSES.map(s => {
-    const n = opps.filter(o => statusBucket(o) === s.key).length;
-    return `<button type="button" data-status="${s.key}" aria-pressed="${view.status === s.key}">${esc(s.label)}<span class="n">${n}</span></button>`;
-  }).join('');
+/* Employers: settings.employers = [{key, label, match}] lets one employer go by several names. */
+let ALIAS = [];
+function buildAlias() {
+  ALIAS = (Array.isArray(S.settings.employers) ? S.settings.employers : []).map(e => {
+    let rx = null; try { rx = new RegExp(e.match || e.label || e.key, 'i'); } catch (x) {}
+    return { key: hid(String(e.key || '').toLowerCase()), label: e.label || e.key, rx };
+  }).filter(e => e.key && e.rx);
+}
+function slug(s) { return String(s || '').toLowerCase().replace(/\(.*?\)/g, ' ').replace(/\b(inc|llc|ltd|corp|corporation|co|company|the)\b\.?/g, ' ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
+function orgKey(org) { for (const a of ALIAS) if (a.rx.test(org || '')) return a.key; return slug(org); }
+function contactKey(c) { const k = hid(String(c.employerKey || '').toLowerCase()); if (k && ALIAS.some(a => a.key === k)) return k; return orgKey(c.employer) || k; }
+function meetingKey(m) { const k = hid(String(m.employerKey || '').toLowerCase()); if (k && ALIAS.some(a => a.key === k)) return k; return orgKey(m.employer) || k; }
+function employerLabel(k) {
+  const a = ALIAS.find(x => x.key === k); if (a) return a.label;
+  const o = S.opps.find(x => orgKey(x.org) === k) || S.watch.find(x => orgKey(x.org) === k); if (o) return o.org;
+  const c = S.contacts.find(x => contactKey(x) === k); if (c) return c.employer;
+  const m = S.meetings.find(x => meetingKey(x) === k); return m ? m.employer : k;
+}
+function empRank(k) { const i = ALIAS.findIndex(a => a.key === k); return i < 0 ? 99 : i; }
+const empLink = (org, key) => { const k = key || orgKey(org); return k ? `<a href="#employer-${esc(k)}">${esc(org || employerLabel(k))}</a>` : esc(org || ''); };
+
+/* Opportunities */
+function oBucket(o) { const s = o.status || 'new'; return s === 'applied' ? 'applied' : s === 'dismissed' ? 'dismissed' : 'active'; }
+const isOpenOpp = o => oBucket(o) === 'active' && !o.closed;
+
+/* Applications live on opps documents: status "applied" or any stage. */
+function isApp(o) { return o.status === 'applied' || !!o.stage; }
+function stageOf(o) {
+  if (o.stage && STAGE_LABEL[o.stage]) return o.stage;
+  const t = String(o.outcome || '').toLowerCase();
+  if (/not selected|reject|declin|no longer|not moving forward|position (has been )?filled/.test(t)) return 'not_selected';
+  if (/withdr/.test(t)) return 'withdrawn';
+  if (/offer/.test(t)) return 'offer';
+  if (/interview/.test(t)) return 'interview';
+  if (/not submitted|filled to/.test(t)) return 'preparing';
+  if (/under review|in review/.test(t)) return 'in_review';
+  return 'submitted';
+}
+function appNext(o) {
+  const st = stageOf(o);
+  if (o.nextStep) return { text: o.nextStep, due: o.nextDue || (st === 'preparing' ? o.deadline : '') };
+  if (st === 'preparing') return { text: 'Finish and submit the application', due: o.deadline };
+  return null;
+}
+const apps = () => S.opps.filter(isApp);
+
+/* People and meetings */
+function warmFor(key) { return key ? S.contacts.filter(c => contactKey(c) === key).sort((a, b) => (b.priority || 0) - (a.priority || 0)) : []; }
+function mStart(m) { const t = Date.parse(m.start || ''); return isNaN(t) ? null : new Date(t); }
+function mUpcoming(m) { const d = mStart(m); return m.status !== 'cancelled' && m.status !== 'done' && m.status !== 'followed_up' && (!d || d.getTime() > Date.now() - 2 * 3600000); }
+function mFmt(m, parts) {
+  const d = mStart(m); if (!d) return null;
+  const tz = m.tz || undefined;
+  try {
+    const o = { timeZone: tz };
+    return {
+      wd: d.toLocaleDateString('en-US', { ...o, weekday: 'short' }),
+      md: d.toLocaleDateString('en-US', { ...o, month: 'short', day: 'numeric' }),
+      tm: d.toLocaleTimeString('en-US', { ...o, hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }),
+      long: d.toLocaleDateString('en-US', { ...o, weekday: 'long', month: 'long', day: 'numeric' }) + ', ' + d.toLocaleTimeString('en-US', { ...o, hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
+    };
+  } catch (e) { return null; }
+}
+function mDay(m) { const d = mStart(m); if (!d) return ''; return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+function meetingsFor(key) { return S.meetings.filter(m => meetingKey(m) === key); }
+function meetingForContact(id) { return S.meetings.find(m => m.contactId === id && m.status !== 'cancelled'); }
+
+/* ---------- writes (one at a time per document) ---------- */
+async function write(col, id, data, revert) {
+  if (!db) return false; const k = col + '/' + id; if (writing.has(k)) return false;
+  writing.add(k); $('err').hidden = true;
+  try { await db.collection(col).doc(id).update(data); return true; }
+  catch (e) { if (revert) revert(); $('err').textContent = 'That change did not save. Reload the page and try again.'; $('err').hidden = false; render(); return false; }
+  finally { writing.delete(k); }
 }
 
-function render() {
-  renderFilters();
-  const rows = opps
-    .filter(o => statusBucket(o) === view.status)
-    .filter(o => view.cat === 'all' || o.category === view.cat)
-    .map(o => ({ o, due: dueInfo(o.deadline) }))
-    .sort((a, b) => (a.due.days < 0 ? 1e9 : a.due.days) - (b.due.days < 0 ? 1e9 : b.due.days));
-  if (!opps.length) {
-    $('list').innerHTML = `<div class="empty"><b>Nothing here yet.</b><span>The weekly scout adds verified opportunities every Tuesday morning. A first run may already be underway.</span></div>`;
-    return;
-  }
-  if (!rows.length) {
-    $('list').innerHTML = `<div class="empty"><b>No ${view.status === 'active' ? 'open' : view.status === 'applied' ? 'applied' : 'dismissed'} items in this category.</b><span>Try another filter.</span></div>`;
-    return;
-  }
-  $('list').innerHTML = rows.map(({ o, due }) => {
-    const url = safeUrl(o.link);
-    const title = url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(o.name)}</a>` : esc(o.name);
-    const elig = o.eligibility === 'confirm' ? '<span class="chip check">Confirm one thing</span>' : '<span class="chip ok">Eligible</span>';
-    const grow = (typeof o.growScore === 'number') ? `<span>GROW score ${o.growScore.toFixed(1)}%</span>` : '';
-    const opts = STATUS_OPTIONS.map(([k, l]) => `<option value="${k}" ${((o.status || 'new') === k) ? 'selected' : ''}>${l}</option>`).join('');
-    return `<article class="opp ${statusBucket(o) !== 'active' ? 'dim' : ''}">
+/* ---------- shared renderers ---------- */
+function oppCard(o) {
+  const due = dueInfo(o.deadline);
+  const k = orgKey(o.org);
+  const elig = o.outcome ? `<span class="chip out">${esc(o.outcome)}</span>` : o.status === 'applied' ? '<span class="chip ok">Applied</span>' : o.eligibility === 'confirm' ? '<span class="chip check">Confirm one thing</span>' : '<span class="chip ok">Eligible</span>';
+  const warm = warmFor(k); const top = warm[0];
+  const cur = o.status || 'new';
+  const marks = MARKS.map(([v, l]) => `<button type="button" data-act="ostatus" data-id="${esc(o._id)}" data-v="${v}" aria-pressed="${cur === v}" title="${cur === v ? 'Click again to clear' : 'Mark as ' + l}" ${db ? '' : 'disabled'}>${l}</button>`).join('');
+  return `<article class="card row2 ${oBucket(o) !== 'active' ? 'dim' : ''}">
+    <div class="main">
+      <div class="chips"><span class="chip cat">${esc(CAT_LABEL[o.category] || o.category || 'Other')}</span>${elig}</div>
+      <h3>${link(o.link, o.name)}</h3>
+      <div class="meta">${o.amount ? `<span class="amt">${esc(o.amount)}</span>` : ''}<span>${empLink(o.org, k)}</span>${o.number ? `<span class="mono">${esc(o.number)}</span>` : ''}${typeof o.growScore === 'number' ? `<span>GROW score ${o.growScore.toFixed(1)}%</span>` : ''}</div>
+      ${o.whyFit ? `<p class="why">${esc(o.whyFit)}</p>` : ''}
+      ${o.eligibility === 'confirm' && o.confirmNote ? `<div class="confirm">To confirm: ${esc(o.confirmNote)}</div>` : ''}
+      ${top ? `<div class="warm">Warm contacts: <b>${warm.length}</b> · best ${esc(top.person)}${top.connector ? ' via ' + esc(top.connector) : ''} (${esc(CSTAT[top.status] || top.status || '')}) · <a href="#employer-${esc(k)}">see all</a></div>` : ''}
+      <div class="meta">${o.appliedDate ? `<span>Applied ${esc(o.appliedDate)}</span>` : ''}<span>Found ${esc(o.firstSeen || '')}</span>${o.lastVerified ? `<span>Verified ${esc(o.lastVerified)}</span>` : ''}${o.source ? `<span>${esc(o.source)}</span>` : ''}</div>
+    </div>
+    <div class="side">
+      <span class="due ${due.cls}">${esc(due.text)}</span>
+      <div class="marks" role="group" aria-label="Status for ${esc(o.name)}">${marks}</div>
+    </div>
+  </article>`;
+}
+
+function pathBox(p, label) {
+  const id = 'p-' + Math.random().toString(36).slice(2, 9);
+  return `<div class="path"><input id="${id}" type="text" readonly value="${esc(p)}" aria-label="${esc(label || 'Folder path')}"><button type="button" class="btn" data-act="copy" data-target="${id}">Copy path</button></div>`;
+}
+
+function appCard(o) {
+  const st = stageOf(o); const k = orgKey(o.org);
+  const nx = appNext(o); const nd = nx && nx.due ? shortDue(nx.due) : null;
+  const warm = warmFor(k); const ms = meetingsFor(k).filter(mUpcoming);
+  const chipCls = st === 'offer' || st === 'interview' ? 'ok' : st === 'preparing' ? 'check' : CLOSED_STAGES.has(st) ? 'out' : 'cat';
+  const opts = STAGES.map(([v, l]) => `<option value="${v}" ${v === st ? 'selected' : ''}>${l}</option>`).join('');
+  const mats = (Array.isArray(o.materials) ? o.materials : []).filter(m => m && m.path);
+  return `<article class="card ${CLOSED_STAGES.has(st) ? 'dim' : ''}">
+    <div class="row2">
       <div class="main">
-        <div class="chips"><span class="chip cat">${esc(CAT_LABEL[o.category] || o.category || 'Other')}</span>${elig}</div>
-        <h3>${title}</h3>
-        <div class="meta">${o.amount ? `<span class="amt">${esc(o.amount)}</span>` : ''}<span>${esc(o.org || '')}</span>${o.number ? `<span class="mono">${esc(o.number)}</span>` : ''}${grow}</div>
-        ${o.whyFit ? `<p class="why">${esc(o.whyFit)}</p>` : ''}
-        ${o.eligibility === 'confirm' && o.confirmNote ? `<div class="confirm">To confirm: ${esc(o.confirmNote)}</div>` : ''}
-        <div class="meta"><span>Found ${esc(o.firstSeen || '')}</span>${o.lastVerified ? `<span>Verified ${esc(o.lastVerified)}</span>` : ''}${o.source ? `<span>${esc(o.source)}</span>` : ''}</div>
+        <div class="chips"><span class="chip ${chipCls}">${esc(STAGE_LABEL[st])}</span><span class="chip cat">${esc(CAT_LABEL[o.category] || o.category || 'Other')}</span></div>
+        <h3>${link(o.link, o.name)}</h3>
+        <div class="meta">${o.amount ? `<span class="amt">${esc(String(o.amount).split('. ')[0])}</span>` : ''}<span>${empLink(o.org, k)}</span>${o.number ? `<span class="mono">${esc(o.number)}</span>` : ''}${o.appliedDate ? `<span>Applied ${esc(fmtDay(o.appliedDate, true))}</span>` : ''}${o.deadline && isoDay(o.deadline) ? `<span>Closes ${esc(fmtDay(o.deadline, true))}</span>` : ''}</div>
+        ${o.outcome ? `<div class="meta"><span>${esc(o.outcome)}</span></div>` : ''}
+        ${nx ? `<div class="next"><b>Next:</b> ${esc(nx.text)}${nd ? ` <span class="due ${nd.cls}">· ${esc(nd.text)}</span>` : ''}</div>` : ''}
+        ${warm.length || ms.length ? `<div class="warm">${warm.length ? `People: <b>${warm.length}</b> · best ${esc(warm[0].person)} (${esc(CSTAT[warm[0].status] || warm[0].status || '')})` : ''}${ms.length ? `${warm.length ? ' · ' : ''}Meeting: ${ms.map(m => `<a href="#meeting-${esc(hid(m._id))}">${esc(m.person)}${mFmt(m) ? ', ' + esc(mFmt(m).md) : ''}</a>`).join(', ')}` : ''}</div>` : ''}
       </div>
       <div class="side">
-        <span class="due ${due.cls}">${esc(due.text)}</span>
-        <label class="lede" style="font-size:0.75rem" for="st-${esc(o._id)}">Status</label>
-        <select id="st-${esc(o._id)}" data-id="${esc(o._id)}" ${db ? '' : 'disabled'}>${opts}</select>
+        <label class="small lede" for="st-${esc(hid(o._id))}">Stage</label>
+        <select class="stage" id="st-${esc(hid(o._id))}" data-act="stage" data-id="${esc(o._id)}" ${db ? '' : 'disabled'}>${opts}</select>
       </div>
-    </article>`;
-  }).join('');
+    </div>
+    ${o.folder ? pathBox(o.folder, 'Application folder') : ''}
+    ${mats.map(m => `<div class="small lede">${esc(m.label || 'File')}</div>${pathBox(m.path, m.label)}`).join('')}
+  </article>`;
 }
 
-document.addEventListener('click', e => {
-  const c = e.target.closest('[data-cat]'); if (c) { view.cat = c.dataset.cat; saveView(); render(); return; }
-  const s = e.target.closest('[data-status]'); if (s) { view.status = s.dataset.status; saveView(); render(); }
+function personRow(c) {
+  const m = meetingForContact(c._id);
+  const chip = c.status === 'met' ? 'ok' : c.status === 'replied' || c.status === 'introduced' || c.status === 'agreed' ? 'ok' : c.status === 'not_asked' ? 'out' : 'check';
+  return `<div class="person">
+    <span><b>${esc(c.person)}</b>${c.title ? ' · <span class="lede">' + esc(c.title) + '</span>' : ''}</span>
+    <span><span class="chip ${chip}">${esc(CSTAT[c.status] || c.status || '')}</span></span>
+    <span class="r">${c.connector ? 'Via ' + esc(c.connector) : esc(c.intro || '')}${c.how ? ' · ' + esc(c.how) : ''}</span>
+    ${c.email ? `<span class="r">Email: <span class="sel mono">${esc(c.email)}</span></span>` : ''}
+    ${c.statusNote ? `<span class="r">${esc(c.statusNote)}</span>` : ''}
+    ${c.action && c.status !== 'met' ? `<span class="r">Next: ${esc(c.action)}</span>` : ''}
+    ${m ? `<span class="r"><a href="#meeting-${esc(hid(m._id))}">Meeting prep${mFmt(m) ? ', ' + esc(mFmt(m).wd + ' ' + mFmt(m).md) : ''}</a></span>` : ''}
+  </div>`;
+}
+
+function meetingCard(m) {
+  const f = mFmt(m);
+  const st = m.status || (f ? 'scheduled' : 'requested');
+  const prep = PREP_LABEL[m.prepStatus] || '';
+  return `<a class="card mtg" href="#meeting-${esc(hid(m._id))}">
+    <div class="cal ${f ? '' : 'unset'}">${f ? `<span class="w">${esc(f.wd)}</span><span class="dd">${esc(f.md)}</span><span class="tm">${esc(f.tm)}</span>` : '<span class="w">Time</span><span class="dd">Not set</span>'}</div>
+    <div class="main" style="display:grid;gap:4px;min-width:0">
+      <h3>${esc(m.person)}${m.credentials ? ', ' + esc(m.credentials) : ''}</h3>
+      <div class="meta"><span>${esc(m.title || '')}</span><span>${esc(m.employer || '')}</span></div>
+      <div class="meta">${m.kind ? `<span>${esc(m.kind)}</span>` : ''}${m.format ? `<span>${esc(m.format)}</span>` : ''}${m.durationMin ? `<span>${esc(m.durationMin)} min</span>` : ''}${m.connector ? `<span>Via ${esc(m.connector)}</span>` : ''}</div>
+      ${m.nextStep && st === 'requested' ? `<div class="next"><b>Next:</b> ${esc(m.nextStep)}</div>` : ''}
+    </div>
+    <div class="side" style="display:grid;gap:6px;justify-items:end">
+      <span class="chip ${st === 'scheduled' ? 'ok' : st === 'requested' ? 'check' : 'out'}">${esc(MSTAT_LABEL[st] || st)}</span>
+      ${prep ? `<span class="chip ${m.prepStatus === 'needed' ? 'out' : 'cat'}">${esc(prep)}</span>` : ''}
+    </div>
+  </a>`;
+}
+
+function watchRow(w) {
+  const last = (w.updates || []).slice(-1)[0];
+  let chk = w.checkBy ? dueInfo(w.checkBy) : null; const dl = w.deadline ? dueInfo(w.deadline) : null;
+  if (chk && chk.days < 0) chk = { text: 'overdue (was ' + chk.text.replace(' · closed', '') + ')', cls: 'past' };
+  const chip = w.status === 'window_open' ? '<span class="chip check">Open now</span>' : w.status === 'not_started' ? '<span class="chip cat">Not started</span>' : '<span class="chip out">Watching</span>';
+  const floor = S.settings.payFloor ? `$${esc(S.settings.payFloor)}` : 'pay';
+  const fl = w.floor === 'below' ? `<span class="chip check">Below ${floor} floor</span>` : w.floor === 'at' ? '<span class="chip ok">At or above floor</span>' : '';
+  const k = orgKey(w.org); const warm = warmFor(k);
+  return `<div class="card" style="gap:4px;padding:10px 14px">
+    <div class="row2"><span class="main"><span><b>${empLink(w.org, k)}</b> · ${link(w.link, w.name)}</span></span>
+    <span class="due ${chk ? chk.cls : ''}">${chk ? 'Check ' + esc(chk.text) : ''}${dl ? ' · Due ' + esc(dl.text) : ''}</span></div>
+    <div class="chips">${chip}${fl}${typeof w.payHr === 'number' ? `<span class="chip out">$${esc(w.payHr)}/hr</span>` : ''}</div>
+    ${last ? `<div class="small lede">${esc(last.date)}: ${esc(last.note)}</div>` : w.whyFit ? `<div class="small lede">${esc(w.whyFit)}</div>` : ''}
+    ${w.contact ? `<div class="small">Contact: ${esc(w.contact)}</div>` : ''}
+    ${warm.length ? `<div class="warm">Warm contacts: <b>${warm.length}</b> · best ${esc(warm[0].person)}${warm[0].connector ? ' via ' + esc(warm[0].connector) : ''}</div>` : ''}
+  </div>`;
+}
+
+/* ---------- views ---------- */
+function vOverview() {
+  const open = S.opps.filter(isOpenOpp);
+  const soonOpen = open.filter(o => dayDiff(o.deadline) >= 0 && dayDiff(o.deadline) <= 21);
+  const A = apps(); const live = A.filter(o => !CLOSED_STAGES.has(stageOf(o)));
+  const prep = live.filter(o => stageOf(o) === 'preparing'); const iv = live.filter(o => stageOf(o) === 'interview');
+  const motion = S.contacts.filter(c => MOTION.has(c.status));
+  const up = S.meetings.filter(mUpcoming).sort((a, b) => (mStart(a) || 8e15) - (mStart(b) || 8e15));
+  const nextM = up.find(m => mStart(m));
+  const items = [];
+  for (const m of up) {
+    const f = mFmt(m);
+    items.push({ day: f ? mDay(m) : (m.nextDue || ''), type: f ? 'Meeting' : 'Set up meeting', text: `${m.person}, ${m.employer || ''}`, sub: f ? `${f.tm}${m.format ? ' · ' + m.format : ''}${PREP_LABEL[m.prepStatus] ? ' · ' + PREP_LABEL[m.prepStatus] : ''}` : (m.nextStep || 'No time set yet'), href: '#meeting-' + hid(m._id) });
+  }
+  for (const o of live) { const nx = appNext(o); if (nx) items.push({ day: isoDay(nx.due) ? nx.due : '', type: 'Application', text: `${o.org}${o.number ? ' ' + o.number : ''}: ${o.name}`, sub: nx.text, href: '#employer-' + orgKey(o.org) }); }
+  for (const o of soonOpen) items.push({ day: o.deadline, type: 'Deadline', text: `${o.name}`, sub: [o.amount && String(o.amount).split('. ')[0], o.org].filter(Boolean).join(' · '), href: '#employer-' + orgKey(o.org) });
+  for (const w of S.watch) if (w.status === 'window_open' && dayDiff(w.deadline) >= 0 && dayDiff(w.deadline) <= 21) items.push({ day: w.deadline, type: 'Window open', text: `${w.org}: ${w.name}`, sub: w.nextAction || '', href: '#employer-' + orgKey(w.org) });
+  items.sort((a, b) => (isoDay(a.day) ? dayDiff(a.day) : 9e9) - (isoDay(b.day) ? dayDiff(b.day) : 9e9));
+  const shown = items.slice(0, 14);
+  const agenda = shown.length ? `<div class="agenda">${shown.map(it => { const d = isoDay(it.day) ? shortDue(it.day) : { text: 'No date', cls: '' }; return `<a class="ag" href="${esc(it.href)}"><span class="d ${d.cls}">${esc(d.text)}</span><span class="t">${esc(it.type)}</span><span class="x">${esc(it.text)}${it.sub ? `<small>${esc(it.sub)}</small>` : ''}</span></a>`; }).join('')}</div>${items.length > shown.length ? `<span class="small lede">${items.length - shown.length} more in the tabs.</span>` : ''}`
+    : `<div class="empty"><b>Nothing needs you in the next three weeks.</b><span>Meetings, application steps and close deadlines will show up here.</span></div>`;
+  const nf = nextM ? mFmt(nextM) : null;
+  const runs = AGENTS.map(a => { const r = S.runs[a.col]; return r ? `<div><b>${esc(a.label)}</b><span>last ran ${esc(fmtDay(String(r.date || '').slice(0, 10)) || r.date || '')}</span><span>${esc(a.line(r) || '')}</span></div>` : ''; }).join('');
+  return `<section class="sect"><div class="eyebrow">${esc(new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }))}</div><h1>What needs you next</h1></section>
+  <div class="tiles">
+    <a class="tile" href="#opportunities"><span class="k">Open opportunities</span><span class="v">${open.length}</span><span class="s">${soonOpen.length} close within 21 days</span></a>
+    <a class="tile" href="#applications"><span class="k">Applications</span><span class="v">${live.length}</span><span class="s">${prep.length} to finish · ${iv.length} interviewing</span></a>
+    <a class="tile" href="#network"><span class="k">Intros in motion</span><span class="v">${motion.length}</span><span class="s">${S.contacts.length} people tracked</span></a>
+    <a class="tile" href="#meetings"><span class="k">Meetings</span><span class="v">${up.length}</span><span class="s">${nf ? 'Next: ' + esc(nf.wd + ' ' + nf.md) : 'None scheduled'}</span></a>
+  </div>
+  <section class="sect"><h2>Next up <span class="lede">meetings, application steps and deadlines, soonest first</span></h2>${agenda}</section>
+  ${runs ? `<section class="sect"><h2>Agents</h2><div class="agents">${runs}</div></section>` : ''}`;
+}
+
+function vOpps() {
+  const by = S.opps.filter(o => oBucket(o) === UI.ostat);
+  const cats = CATS.map(([k, l]) => `<button type="button" data-act="ocat" data-v="${k}" aria-pressed="${UI.ocat === k}">${esc(l)}<span class="n">${k === 'all' ? by.length : by.filter(o => o.category === k).length}</span></button>`).join('');
+  const stats = OSTAT.map(([k, l]) => `<button type="button" data-act="ostat" data-v="${k}" aria-pressed="${UI.ostat === k}">${esc(l)}<span class="n">${S.opps.filter(o => oBucket(o) === k).length}</span></button>`).join('');
+  const rows = by.filter(o => UI.ocat === 'all' || o.category === UI.ocat).map(o => ({ o, d: dueInfo(o.deadline).days })).sort((a, b) => (a.d < 0 ? 1e9 : a.d) - (b.d < 0 ? 1e9 : b.d));
+  const list = !S.got.has('opps') ? '<div class="empty"><b>Loading opportunities…</b></div>'
+    : !S.opps.length ? '<div class="empty"><b>Nothing here yet.</b><span>The opportunity scout adds verified finds on its next run.</span></div>'
+    : !rows.length ? '<div class="empty"><b>Nothing in this view.</b><span>Try another filter.</span></div>'
+    : rows.map(r => oppCard(r.o)).join('');
+  const days = d => isoDay(d) ? dayDiff(d) : Infinity;
+  const W = [['soon', 'Check within 14 days'], ['all', 'All'], ['window_open', 'Open now'], ['not_started', 'Not started']];
+  const wrows = S.watch.filter(w => w.status !== 'applied' && w.status !== 'dismissed').filter(w => UI.wview === 'all' ? true : UI.wview === 'soon' ? days(w.checkBy) <= 14 || days(w.deadline) <= 14 : w.status === UI.wview)
+    .sort((a, b) => Math.min(days(a.checkBy), days(a.deadline)) - Math.min(days(b.checkBy), days(b.deadline)));
+  const runline = (() => { const r = S.runs.runs; if (!r) return ''; const t = r.totals || {}; return `<div class="meta"><span>Last scout run <b>${esc(r.date || '')}</b></span><span>${t.candidates ?? 0} candidates checked</span><span>${t.eligible ?? 0} eligible</span><span>${t.confirm ?? 0} to confirm</span><span>${t.rejected ?? 0} ruled out</span></div>`; })();
+  return `<section class="sect"><h1>Opportunities</h1><p class="lede">Only items an independent check found you eligible for, or nearly eligible with one thing to confirm, each verified on the funder's or employer's own page.</p>${runline}</section>
+  <div class="filters"><div class="seg" role="group" aria-label="Category">${cats}</div><div class="seg" role="group" aria-label="Status">${stats}</div></div>
+  <div class="list">${list}</div>
+  <section class="sect"><h2>Programs to watch <span class="lede">${S.watch.length ? S.watch.length + ' tracked' : ''}</span></h2>
+    <p class="lede small">Programs that have not posted yet, or posted below your pay floor, sorted by the date the scout checks next.</p>
+    <div class="seg" role="group" aria-label="Watch filter">${W.map(([k, l]) => `<button type="button" data-act="wview" data-v="${k}" aria-pressed="${UI.wview === k}">${esc(l)}</button>`).join('')}</div>
+    <div class="list">${wrows.length ? wrows.map(watchRow).join('') : '<span class="lede small">Nothing in this view.</span>'}</div>
+  </section>
+  <details class="fold" id="cov-wrap"><summary>Areas the scouts have swept <span id="cov-count" class="lede" style="font-weight:400"></span></summary><div class="cov" id="cov"><span class="lede">Open to load.</span></div></details>
+  <details class="fold" id="ruled-wrap"><summary>Ruled out <span id="ruled-count" class="lede" style="font-weight:400"></span></summary><div class="ruled" id="ruled"><span class="lede">Open to load.</span></div></details>`;
+}
+
+function vApps() {
+  const A = apps();
+  const counts = {}; for (const o of A) { const s = stageOf(o); counts[s] = (counts[s] || 0) + 1; }
+  const need = o => !CLOSED_STAGES.has(stageOf(o)) && !!appNext(o);
+  const f = UI.afilt;
+  const rows = A.filter(o => f === 'all' ? true : f === 'closed' ? CLOSED_STAGES.has(stageOf(o)) : f === 'action' ? need(o) : !CLOSED_STAGES.has(stageOf(o)));
+  const order = Object.fromEntries(STAGES.map(([k], i) => [k, i]));
+  const pri = { preparing: 0, offer: 1, interview: 2, in_review: 3, submitted: 4, not_selected: 5, withdrawn: 6 };
+  rows.sort((a, b) => (pri[stageOf(a)] - pri[stageOf(b)]) || (empRank(orgKey(a.org)) - empRank(orgKey(b.org))) || String(b.appliedDate || '').localeCompare(String(a.appliedDate || '')));
+  const segs = AFILT.map(([k, l]) => { const n = k === 'all' ? A.length : k === 'closed' ? A.filter(o => CLOSED_STAGES.has(stageOf(o))).length : k === 'action' ? A.filter(need).length : A.filter(o => !CLOSED_STAGES.has(stageOf(o))).length; return `<button type="button" data-act="afilt" data-v="${k}" aria-pressed="${f === k}">${esc(l)}<span class="n">${n}</span></button>`; }).join('');
+  const pipe = STAGES.filter(([k]) => counts[k]).map(([k, l]) => `<span>${esc(l)} <b>${counts[k]}</b></span>`).join('');
+  return `<section class="sect"><h1>Applications</h1><p class="lede">Everything you have applied to or are preparing. Change the stage when something happens; the scouts also move it when an employer email arrives.</p>${pipe ? `<div class="pipe">${pipe}</div>` : ''}</section>
+  <div class="filters"><div class="seg" role="group" aria-label="Application filter">${segs}</div></div>
+  <div class="list">${!S.got.has('opps') ? '<div class="empty"><b>Loading applications…</b></div>' : rows.length ? rows.map(appCard).join('') : `<div class="empty"><b>No applications in this view.</b><span>Mark an opportunity Applied, or set its stage, and it appears here.</span></div>`}</div>`;
+}
+
+/* Network map, same layout as the original job network map: You -> route -> person -> employer. */
+const INTRO_LABEL = { trusted: "someone you'd ask", insider: 'works there and knows you', maybe: 'maybe ready to ask', later: 'not ready to ask yet' };
+const IORD = { trusted: 0, insider: 1, maybe: 2, later: 3 };
+const ACTIVE = new Set(['agreed', 'introduced', 'replied', 'met']);
+const closeOf = c => Number(c.closeness) || 0;
+function routeKey(c) {
+  if (closeOf(c) >= 4 || c.intro === 'direct') return '__direct';
+  if (c.connector) return 'c:' + c.connector;
+  if (c.intro === 'scout lead') return '__lead';
+  return '__prog';
+}
+function nodeColor(c) {
+  const cl = closeOf(c);
+  if (cl >= 4 || c.intro === 'direct') return 'var(--direct)';
+  if (c.intro === 'scout lead') return 'var(--c1)';
+  if (cl === 3 || c.connector) return c.intro === 'later' ? 'var(--edge)' : 'var(--c3)';
+  return 'var(--c2)';
+}
+function buildRoutes(list) {
+  const R = {};
+  for (const c of list) {
+    const k = routeKey(c);
+    if (!R[k]) R[k] = k === '__direct' ? { key: k, kind: 'direct', label: 'You know them', people: [] }
+      : k === '__lead' ? { key: k, kind: 'lead', label: 'No route yet', people: [] }
+      : k === '__prog' ? { key: k, kind: 'program', label: 'Same school or program', people: [] }
+      : { key: k, kind: 'connector', label: c.connector, intro: 'later', people: [] };
+    const r = R[k]; r.people.push(c);
+    if (r.kind === 'connector' && (IORD[c.intro] ?? 3) < (IORD[r.intro] ?? 3)) r.intro = c.intro;
+  }
+  const kindOrd = { direct: 0, connector: 1, program: 2, lead: 3 };
+  const routes = Object.values(R);
+  for (const r of routes) {
+    const act = r.people.filter(c => ACTIVE.has(c.status)).length;
+    r.act = act;
+    r.sub = r.kind === 'direct' ? 'emailed, met or worked with' : r.kind === 'lead' ? 'reach out directly' : r.kind === 'program' ? 'shared school or program'
+      : (INTRO_LABEL[r.intro] || 'connector') + (act ? ` · ${act} in motion` : '');
+  }
+  routes.sort((a, b) => kindOrd[a.kind] - kindOrd[b.kind] || (IORD[a.intro] ?? 0) - (IORD[b.intro] ?? 0) || b.act - a.act || b.people.length - a.people.length || a.label.localeCompare(b.label));
+  return routes;
+}
+function netMap(list, routes) {
+  if (!list.length) return '';
+  const short = s => String(s || '').replace(/\s*\(.*?\)\s*/g, ' ').trim();
+  const ridx = Object.fromEntries(routes.map((r, i) => [r.key, i]));
+  const items = list.slice().sort((a, b) => ridx[routeKey(a)] - ridx[routeKey(b)] || empRank(contactKey(a)) - empRank(contactKey(b)) || (b.priority || 0) - (a.priority || 0));
+  const X = { me: 44, route: 200, item: 452, emp: 724 }, ROW = 22, TOP = 64;
+  const H = Math.max(260, TOP + items.length * ROW + 30);
+  items.forEach((c, i) => { c.__y = TOP + i * ROW; });
+  for (const r of routes) { const ys = items.filter(c => routeKey(c) === r.key).map(c => c.__y); r.y = ys.reduce((s, y) => s + y, 0) / ys.length; }
+  for (let i = 1; i < routes.length; i++) if (routes[i].y - routes[i - 1].y < 30) routes[i].y = routes[i - 1].y + 30;
+  const emps = [...new Set(items.map(contactKey))].sort((a, b) => empRank(a) - empRank(b) || employerLabel(a).localeCompare(employerLabel(b)));
+  const eGap = Math.min(56, (H - TOP - 40) / Math.max(emps.length - 1, 1));
+  const ey = Object.fromEntries(emps.map((k, i) => [k, TOP + i * eGap]));
+  const meY = TOP + 6;
+  const bez = (x1, y1, x2, y2) => { const mx = (x1 + x2) / 2; return `M${x1},${y1.toFixed(1)} C${mx},${y1.toFixed(1)} ${mx},${y2.toFixed(1)} ${x2},${y2.toFixed(1)}`; };
+  const dim = c => (NET.route && routeKey(c) !== NET.route) ? ' m-dim' : '';
+  const rdim = r => (NET.route && r.key !== NET.route) ? ' m-dim' : '';
+  const edim = k => (NET.route && !items.some(c => contactKey(c) === k && routeKey(c) === NET.route)) ? ' m-dim' : '';
+  let e = '', n = '', l = '';
+  for (const [t, x] of [['YOU', X.me], ['HOW YOU REACH THEM', X.route], ['PERSON', X.item], ['EMPLOYER', X.emp]]) l += `<text class="m-col" x="${x}" y="30" text-anchor="${x === X.me ? 'middle' : 'start'}">${t}</text>`;
+  for (const r of routes) {
+    const later = r.intro === 'later', w = r.kind === 'direct' ? 4 : later || r.kind !== 'connector' ? 1.3 : Math.min(6, 1.6 + r.people.length * 0.45);
+    e += `<path class="m-edge ${r.kind === 'direct' ? 'direct' : later ? 'later' : r.kind === 'connector' ? 'hub' : ''}${rdim(r)}" d="${bez(X.me + 20, meY, X.route - 8, r.y)}" stroke-width="${w.toFixed(1)}"${r.kind !== 'connector' && r.kind !== 'direct' || later ? ' stroke-dasharray="3 4"' : ''}/>`;
+    const st = r.kind === 'direct' ? 'stroke:var(--direct);stroke-width:2.5' : r.intro === 'trusted' ? 'stroke:var(--accent);stroke-width:2.5' : later || r.kind === 'lead' ? 'stroke:var(--edge);stroke-dasharray:2 2' : '';
+    n += `<circle class="m-hub${rdim(r)}${NET.route === r.key ? ' m-sel' : ''}" cx="${X.route}" cy="${r.y.toFixed(1)}" r="${r.kind === 'direct' ? 9 : 6.5}" style="${st}" data-act="nroute" data-k="${esc(r.key)}" tabindex="0" role="button" aria-label="${esc(r.label)}: ${r.people.length}"/>`;
+    l += `<text class="m-hl${rdim(r)}" x="${X.route + 14}" y="${(r.y - 1).toFixed(1)}"${later ? ' style="font-weight:500"' : ''}>${esc(short(r.label))}</text><text class="m-sub${rdim(r)}" x="${X.route + 14}" y="${(r.y + 11).toFixed(1)}">${esc(r.sub)}</text>`;
+  }
+  for (const c of items) {
+    const r = routes[ridx[routeKey(c)]], later = r.intro === 'later' || r.kind === 'lead', cl = closeOf(c), direct = r.kind === 'direct';
+    e += `<path class="m-edge${direct ? ' direct' : ''}${dim(c)}" d="${bez(X.route + 8, r.y, X.item - 8, c.__y)}" stroke="${direct ? '' : (later ? 'var(--edge)' : nodeColor(c))}" stroke-width="${direct ? 2.6 : !later && cl >= 3 ? 1.6 : 1}"${later || (!direct && cl <= 2) ? ' stroke-dasharray="2 4"' : ''} opacity="${later ? 0.6 : 0.9}"/>`;
+    e += `<path class="m-edge${dim(c)}" d="${bez(X.item + 168, c.__y, X.emp - 8, ey[contactKey(c)])}" stroke-width="0.8" opacity="0.5"/>`;
+    const big = direct || ACTIVE.has(c.status) || c.status === 'asked';
+    n += `<circle class="m-node${dim(c)}${NET.sel === c._id ? ' m-sel' : ''}" cx="${X.item}" cy="${c.__y}" r="${big ? 7.5 : 5.5}" fill="${nodeColor(c)}" data-act="npick" data-id="${esc(c._id)}" tabindex="0" role="button" aria-label="${esc(c.person)}, ${esc(employerLabel(contactKey(c)))}"/>`;
+    const star = ACTIVE.has(c.status) ? '★ ' : '', chk = c.factCheck === 'pass' || c.factCheck === 'fix' ? ' ✓' : '';
+    l += `<text class="m-pl${dim(c)}${star ? ' on' : later ? ' off' : ''}" x="${X.item + 12}" y="${c.__y + 4}">${esc(star + short(c.person) + chk)}</text>`;
+  }
+  for (const k of emps) {
+    n += `<circle class="m-emp${edim(k)}" cx="${X.emp}" cy="${ey[k].toFixed(1)}" r="5" fill="var(--ink)" data-act="nemp" data-k="${esc(k)}"/>`;
+    l += `<text class="m-el${edim(k)}" x="${X.emp + 12}" y="${(ey[k] + 4).toFixed(1)}" data-act="nemp" data-k="${esc(k)}">${esc(short(employerLabel(k)))}</text>`;
+  }
+  const meSvg = `<circle cx="${X.me}" cy="${meY}" r="20" fill="var(--ink)"/><text x="${X.me}" y="${meY + 4}" text-anchor="middle" style="fill:var(--on-ink);font:700 12px var(--font-display)">You</text>`;
+  return `<svg viewBox="0 0 940 ${H}" role="img" aria-label="Network map: how you reach each person, and where they work">${e}${meSvg}${n}${l}</svg>`;
+}
+function netDetail(list, routes) {
+  if (NET.route) {
+    const r = routes.find(x => x.key === NET.route);
+    if (r) return `<div class="eyebrow">Route</div><p class="who">${esc(r.label)}</p><p class="small lede">${esc(r.sub)} · ${r.people.length} ${r.people.length === 1 ? 'person' : 'people'}</p>
+      <dl>${r.people.map(c => `<dt>${esc(CSTAT[c.status] || c.status || '')}</dt><dd><a href="#" data-act="npick" data-id="${esc(c._id)}">${esc(c.person)}</a><br><span class="lede">${esc(employerLabel(contactKey(c)))}</span></dd>`).join('')}</dl>
+      <p><button type="button" class="btn" data-act="nclear">Show everyone</button></p>`;
+  }
+  const c = S.contacts.find(x => x._id === NET.sel) || list.slice().sort((a, b) => (ACTIVE.has(b.status) - ACTIVE.has(a.status)) || (b.priority || 0) - (a.priority || 0))[0];
+  if (!c) return '<p class="small lede">No one in this view.</p>';
+  const k = contactKey(c), m = meetingForContact(c._id), r = routes.find(x => x.key === routeKey(c));
+  const fc = c.factCheck === 'pass' ? 'Checked, confirmed' : c.factCheck === 'fix' ? 'Checked, corrected' : c.factCheck ? esc(c.factCheck) : '';
+  const route = r ? (r.kind === 'connector' ? `Through ${esc(c.connector)} (${esc(INTRO_LABEL[c.intro] || c.intro || 'connector')})` : esc(r.label)) : '';
+  return `<div class="eyebrow">Selected</div><p class="who">${esc(c.person)}</p>
+    <p class="small lede">${esc(c.title || '')}${c.title ? ' · ' : ''}<a href="#employer-${esc(k)}">${esc(employerLabel(k))}</a></p>
+    <div class="chips" style="margin:8px 0 10px"><span class="chip ${ACTIVE.has(c.status) ? 'ok' : c.status === 'not_asked' ? 'out' : 'check'}">${esc(CSTAT[c.status] || c.status || '')}</span>${c.closeness ? `<span class="chip cat">Closeness ${esc(c.closeness)} of 5</span>` : ''}${typeof c.priority === 'number' ? `<span class="chip out">Priority ${esc(c.priority)}</span>` : ''}</div>
+    <dl>${route ? `<dt>Route</dt><dd>${route}</dd>` : ''}${c.how ? `<dt>Connection</dt><dd>${esc(c.how)}</dd>` : ''}${c.statusNote ? `<dt>Status</dt><dd>${esc(c.statusNote)}</dd>` : ''}${c.action ? `<dt>Next step</dt><dd>${esc(c.action)}</dd>` : ''}${c.email ? `<dt>Email</dt><dd><span class="sel mono" style="user-select:all">${esc(c.email)}</span></dd>` : ''}${c.evidence ? `<dt>Proof</dt><dd>${esc(c.evidence)}</dd>` : ''}${fc ? `<dt>Fact check</dt><dd>${fc}</dd>` : ''}${m ? `<dt>Meeting</dt><dd><a href="#meeting-${esc(hid(m._id))}">Prep brief${mFmt(m) ? ', ' + esc(mFmt(m).wd + ' ' + mFmt(m).md) : ''}</a></dd>` : ''}</dl>`;
+}
+
+function vNetwork() {
+  const q = UI.nq.trim().toLowerCase();
+  const pass0 = c => (UI.nfilt === 'all' ? true : UI.nfilt === 'motion' ? MOTION.has(c.status) : c.status === UI.nfilt) &&
+    (!q || [c.person, c.employer, c.title, c.connector].some(x => String(x || '').toLowerCase().includes(q)));
+  const base = S.contacts.filter(pass0);
+  const ecount = {}; for (const c of base) { const k = contactKey(c); ecount[k] = (ecount[k] || 0) + 1; }
+  if (UI.nemp && !ecount[UI.nemp]) UI.nemp = '';
+  const pass = c => pass0(c) && (!UI.nemp || contactKey(c) === UI.nemp);
+  const shown = base.filter(pass);
+  const routes = buildRoutes(shown);
+  if (NET.route && !routes.some(r => r.key === NET.route)) NET.route = '';
+  const ekeys = Object.keys(ecount).sort((a, b) => empRank(a) - empRank(b) || employerLabel(a).localeCompare(employerLabel(b)));
+  const echips = `<div class="echips" role="group" aria-label="Employer"><button type="button" data-act="nempf" data-v="" aria-pressed="${!UI.nemp}">All employers<span class="n">${base.length}</span></button>${ekeys.map(k => `<button type="button" data-act="nempf" data-v="${esc(k)}" aria-pressed="${UI.nemp === k}">${esc(employerLabel(k))}<span class="n">${ecount[k]}</span></button>`).join('')}</div>`;
+  const map = S.got.has('contacts') && shown.length ? `<div class="netgrid"><div class="mapwrap"><div class="mapbox">${netMap(shown, routes)}</div>
+    <div class="mlegend"><span><i class="mdot" style="background:var(--direct)"></i>You know them</span><span><i class="mdot" style="background:var(--c3)"></i>Through someone you'd ask</span><span><i class="mdot" style="background:var(--edge)"></i>Through someone you're not ready to ask</span><span><i class="mdot" style="background:var(--c2)"></i>Same school or program</span><span><i class="mdot" style="background:var(--c1)"></i>Scout lead, no route yet</span><span>★ intro agreed or under way</span><span>✓ fact-checked</span></div></div>
+    <div class="card ndetail">${netDetail(shown, routes)}</div></div>` : '';
+  const groups = {};
+  for (const c of shown) { const k = contactKey(c); (groups[k] = groups[k] || []).push(c); }
+  const keys = Object.keys(groups).sort((a, b) => (empRank(a) - empRank(b)) || employerLabel(a).localeCompare(employerLabel(b)));
+  const segs = NFILT.map(([k, l]) => `<button type="button" data-act="nfilt" data-v="${k}" aria-pressed="${UI.nfilt === k}">${esc(l)}<span class="n">${k === 'all' ? S.contacts.length : k === 'motion' ? S.contacts.filter(c => MOTION.has(c.status)).length : S.contacts.filter(c => c.status === k).length}</span></button>`).join('');
+  const body = !S.got.has('contacts') ? '<div class="empty"><b>Loading contacts…</b></div>' : keys.length ? keys.map(k => {
+    const list = groups[k].sort((a, b) => (b.priority || 0) - (a.priority || 0));
+    const na = apps().filter(o => orgKey(o.org) === k && !CLOSED_STAGES.has(stageOf(o))).length;
+    const no = S.opps.filter(o => isOpenOpp(o) && orgKey(o.org) === k).length;
+    return `<div class="grp"><div class="grp-h"><h3><a href="#employer-${esc(k)}">${esc(employerLabel(k))}</a> <span class="lede" style="font-weight:400">${list.length}</span></h3><span class="small lede">${na ? na + ' application' + (na > 1 ? 's' : '') : ''}${na && no ? ' · ' : ''}${no ? no + ' open' : ''}</span></div><div class="people">${list.map(personRow).join('')}</div></div>`;
+  }).join('') : `<div class="empty"><b>No one in this view.</b><span>${S.contacts.length ? 'Try another filter or search.' : 'The network tools and scouts add people here.'}</span></div>`;
+  return `<section class="sect"><h1>Network</h1><p class="lede">Who can get you in the door: everyone at the places you applied whom you can reach, and the route to each one. Orange lines are people you already know; solid blue lines run through people you would ask; grey dashed lines run through people you are not ready to ask yet. Click a route or a person for details.</p></section>
+  <div class="filters"><div class="seg" role="group" aria-label="Contact filter">${segs}</div><input class="search" id="nq" type="search" placeholder="Search people or employers" value="${esc(UI.nq)}" aria-label="Search people or employers"></div>
+  ${S.got.has('contacts') && Object.keys(ecount).length ? echips : ''}
+  ${map}
+  <section class="sect"><h2>By employer <span class="lede">${shown.length} ${shown.length === 1 ? 'person' : 'people'}</span></h2><div class="list">${body}</div></section>`;
+}
+
+function vMeetings() {
+  const up = S.meetings.filter(mUpcoming).sort((a, b) => (mStart(a) || 8e15) - (mStart(b) || 8e15));
+  const past = S.meetings.filter(m => !mUpcoming(m)).sort((a, b) => (mStart(b) || 0) - (mStart(a) || 0));
+  return `<section class="sect"><h1>Meetings</h1><p class="lede">Calls and coffee chats, each with a prep brief: who they are, what their group does, how it maps to your work, and questions to ask.</p></section>
+  <section class="sect"><h2>Coming up <span class="lede">${up.length || ''}</span></h2><div class="list">${!S.got.has('meetings') ? '<div class="empty"><b>Loading meetings…</b></div>' : up.length ? up.map(meetingCard).join('') : '<div class="empty"><b>No meetings yet.</b><span>When someone agrees to talk, the meeting prep agent adds them here with a brief.</span></div>'}</div></section>
+  ${past.length ? `<section class="sect"><h2>Past <span class="lede">${past.length}</span></h2><div class="list">${past.map(meetingCard).join('')}</div></section>` : ''}`;
+}
+
+function vMeeting(id) {
+  const m = S.meetings.find(x => hid(x._id) === id);
+  if (!m) return S.got.has('meetings') ? `<a class="back" href="#meetings">← All meetings</a><div class="empty"><b>That meeting is not in the tracker.</b><span>It may have been removed.</span></div>` : '<div class="empty"><b>Loading…</b></div>';
+  const f = mFmt(m); const k = meetingKey(m);
+  const st = m.status || (f ? 'scheduled' : 'requested');
+  const sbtn = MSTAT.map(([v, l]) => `<button type="button" data-act="mstatus" data-id="${esc(m._id)}" data-v="${v}" aria-pressed="${st === v}" ${db ? '' : 'disabled'}>${l}</button>`).join('');
+  const asked = new Set(Array.isArray(m.asked) ? m.asked : []);
+  const hdr = Array.isArray(m.bridgeHeaders) && m.bridgeHeaders.length === 3 ? m.bridgeHeaders : ['Their work', 'Shared idea', 'Your work'];
+  const rel = (Array.isArray(m.relatedOpps) ? m.relatedOpps : []).map(i => S.opps.find(o => o._id === i)).filter(Boolean);
+  const sec = (t, body) => body ? `<section class="dsec"><h2>${esc(t)}</h2>${body}</section>` : '';
+  const timeline = Array.isArray(m.timeline) && m.timeline.length ? `<div class="tbl"><table><thead><tr><th>When</th><th>Role</th></tr></thead><tbody>${m.timeline.map(t => `<tr><td>${esc(t.when)}</td><td>${esc(t.role)}</td></tr>`).join('')}</tbody></table></div>` : '';
+  const work = Array.isArray(m.work) && m.work.length ? `<div class="tbl"><table><thead><tr><th>Year</th><th>Paper or project</th><th>Design and data</th></tr></thead><tbody>${m.work.map(w => `<tr><td>${esc(w.year)}</td><td>${link(w.link, w.title)}${w.venue ? ` <span class="lede">(${esc(w.venue)})</span>` : ''}</td><td>${esc(w.note || '')}</td></tr>`).join('')}</tbody></table></div>` : '';
+  const group = (m.groupIntro ? `<p class="small lede">${esc(m.groupIntro)}</p>` : '') + (Array.isArray(m.group) && m.group.length ? `<ul class="bul">${m.group.map(g => `<li>${esc(g)}</li>`).join('')}</ul>` : '') + (Array.isArray(m.groupLinks) && m.groupLinks.length ? `<div class="meta">${m.groupLinks.map(l => `<span>${link(l.url, l.label)}</span>`).join('')}</div>` : '');
+  const news = Array.isArray(m.news) && m.news.length ? `<ul class="bul">${m.news.map(n => `<li>${esc(n.text)}${n.link ? ' (' + link(n.link, n.date || 'source') + ')' : n.date ? ' (' + esc(n.date) + ')' : ''}</li>`).join('')}</ul>` : '';
+  const bridges = Array.isArray(m.bridges) && m.bridges.length ? `${m.bridgeSummary ? `<p>${esc(m.bridgeSummary)}</p>` : ''}<div class="bridge" role="list"><div class="bh" aria-hidden="true"><span></span><span>${esc(hdr[0])}</span><span>${esc(hdr[1])}</span><span>${esc(hdr[2])}</span></div>${m.bridges.map((b, i) => `<div class="brow" role="listitem"><span class="bn">${i + 1}</span><div class="bnode"><b>${esc(b.theirs)}</b>${b.theirsDetail ? `<span>${esc(b.theirsDetail)}</span>` : ''}</div><div class="bmid"><span>${esc(b.shared)}</span></div><div class="bnode"><b>${esc(b.mine)}</b>${b.mineDetail ? `<span>${esc(b.mineDetail)}</span>` : ''}</div></div>`).join('')}</div>` : '';
+  const qs = Array.isArray(m.questions) && m.questions.length ? `${m.questionTip ? `<p class="small lede">${esc(m.questionTip)}</p>` : ''}<ol class="qs">${m.questions.map((q, i) => `<li class="${asked.has(i) ? 'asked' : ''}"><span class="qt">${q.topic ? `<b>${esc(q.topic)}</b>` : ''}${esc(q.text)}</span><label><input type="checkbox" data-act="asked" data-id="${esc(m._id)}" data-i="${i}" ${asked.has(i) ? 'checked' : ''} ${db ? '' : 'disabled'}> Asked</label></li>`).join('')}</ol>${m.backupQuestion ? `<p class="small"><b>Backup:</b> ${esc(m.backupQuestion)}</p>` : ''}${m.mention ? `<p class="small">${esc(m.mention)}</p>` : ''}` : '';
+  const email = m.emailDraft && m.emailDraft.body ? `${m.emailDraft.context ? `<p class="small lede">${esc(m.emailDraft.context)}</p>` : ''}<div class="quote" id="mail-${esc(hid(m._id))}">${String(m.emailDraft.body).split(/\n{2,}/).map(p => `<p>${esc(p).replace(/\n/g, '<br>')}</p>`).join('')}</div><div><button type="button" class="btn" data-act="copytext" data-src="mail-${esc(hid(m._id))}">Copy email text</button></div>` : '';
+  const srcs = Array.isArray(m.sources) && m.sources.length ? `<ul class="srcs">${m.sources.map(s => `<li>${link(s.url, s.label || s.url)}</li>`).join('')}</ul>${m.unverified ? `<p class="small lede">Could not verify: ${esc(m.unverified)}</p>` : ''}` : (m.unverified ? `<p class="small lede">Could not verify: ${esc(m.unverified)}</p>` : '');
+  return `<div class="detail">
+    <a class="back" href="#meetings">← All meetings</a>
+    <header class="dhead">
+      <div class="eyebrow">${esc(m.kind || 'Meeting')}${f ? ' · ' + esc(f.long) : ' · time not set'}${m.durationMin ? ' · ' + esc(m.durationMin) + ' min' : ''}${m.format ? ' · ' + esc(m.format) : ''}</div>
+      <h1>${esc(m.person)}${m.credentials ? ', ' + esc(m.credentials) : ''}</h1>
+      <div class="meta"><span>${esc(m.title || '')}</span><span>${empLink(m.employer, k)}</span>${m.connector ? `<span>Introduced by ${esc(m.connector)}</span>` : ''}${m.prepUpdated ? `<span>Prep updated ${esc(fmtDay(m.prepUpdated, true))}</span>` : ''}</div>
+      ${m.headline ? `<p>${esc(m.headline)}</p>` : ''}
+      <div class="filters"><div class="marks" role="group" aria-label="Meeting status">${sbtn}</div>${safeUrl(m.prepDoc) ? `<a class="btn primary" href="${esc(safeUrl(m.prepDoc))}" target="_blank" rel="noopener">Open full prep doc</a>` : ''}</div>
+      ${m.nextStep && st === 'requested' ? `<div class="next"><b>Next:</b> ${esc(m.nextStep)}</div>` : ''}
+      ${m.followUp ? `<div class="next"><b>Follow-up:</b> ${esc(m.followUp)}</div>` : ''}
+    </header>
+    ${email ? sec('Email to send', email) : ''}
+    ${sec('Who they are', (m.summary ? `<p>${esc(m.summary)}</p>` : '') + timeline)}
+    ${sec('Their work and group', work + group + (news ? `<h3>Recent news they may bring up</h3>${news}` : ''))}
+    ${sec('How it connects to your work', bridges)}
+    ${sec('Questions to ask', qs)}
+    ${rel.length ? sec('Related applications', `<div class="list">${rel.map(appCard).join('')}</div>`) : ''}
+    <section class="dsec"><h2>Your notes</h2><label class="small lede" for="notes-${esc(hid(m._id))}">What you learned, names they mentioned, and what you promised to send.</label><textarea class="notes" id="notes-${esc(hid(m._id))}" ${db ? '' : 'disabled'}>${esc(m.notes || '')}</textarea><div class="filters"><button type="button" class="btn primary" data-act="savenotes" data-id="${esc(m._id)}" ${db ? '' : 'disabled'}>Save notes</button><span class="small lede" id="notes-state">${m.notesUpdated ? 'Saved ' + esc(m.notesUpdated) : ''}</span></div></section>
+    ${sec('Sources', srcs)}
+  </div>`;
+}
+
+function vEmployer(k) {
+  const label = employerLabel(k);
+  const A = apps().filter(o => orgKey(o.org) === k);
+  const O = S.opps.filter(o => isOpenOpp(o) && orgKey(o.org) === k && !isApp(o));
+  const W = S.watch.filter(w => orgKey(w.org) === k && w.status !== 'dismissed');
+  const P = warmFor(k); const M = meetingsFor(k);
+  const blk = (t, n, body) => n ? `<section class="sect"><h2>${esc(t)} <span class="lede">${n}</span></h2>${body}</section>` : '';
+  return `<div class="detail"><a class="back" href="#network">← Network</a>
+    <header class="dhead"><div class="eyebrow">Employer</div><h1>${esc(label)}</h1>
+    <div class="meta"><span>${A.length} application${A.length === 1 ? '' : 's'}</span><span>${O.length} open</span><span>${P.length} ${P.length === 1 ? 'person' : 'people'}</span><span>${M.length} meeting${M.length === 1 ? '' : 's'}</span></div></header>
+    ${blk('Meetings', M.length, `<div class="list">${M.map(meetingCard).join('')}</div>`)}
+    ${blk('Applications', A.length, `<div class="list">${A.map(appCard).join('')}</div>`)}
+    ${blk('People', P.length, `<div class="people">${P.map(personRow).join('')}</div>`)}
+    ${blk('Open opportunities', O.length, `<div class="list">${O.map(oppCard).join('')}</div>`)}
+    ${blk('Watching', W.length, `<div class="list">${W.map(watchRow).join('')}</div>`)}
+    ${!A.length && !O.length && !W.length && !P.length && !M.length ? '<div class="empty"><b>Nothing tracked here yet.</b></div>' : ''}
+  </div>`;
+}
+
+/* ---------- router ---------- */
+function route() {
+  const h = (location.hash || '').replace(/^#/, '');
+  if (h.startsWith('meeting-')) return { tab: 'meetings', view: 'meeting', id: h.slice(8) };
+  if (h.startsWith('employer-')) return { tab: '', view: 'employer', id: h.slice(9) };
+  if (['opportunities', 'applications', 'network', 'meetings'].includes(h)) return { tab: h, view: h };
+  return { tab: 'overview', view: 'overview' };
+}
+let lastView = '';
+function render() {
+  const r = route();
+  document.querySelectorAll('#tabs a').forEach(a => a.setAttribute('aria-current', a.dataset.tab === r.tab ? 'page' : 'false'));
+  const A = apps();
+  $('n-opps').textContent = S.got.has('opps') ? S.opps.filter(isOpenOpp).length : '';
+  $('n-apps').textContent = S.got.has('opps') ? A.filter(o => !CLOSED_STAGES.has(stageOf(o))).length : '';
+  $('n-net').textContent = S.got.has('contacts') ? S.contacts.filter(c => MOTION.has(c.status)).length : '';
+  $('n-mtg').textContent = S.got.has('meetings') ? (S.meetings.filter(mUpcoming).length || '') : '';
+  const key = r.view + ':' + (r.id || '');
+  // Keep typing state: do not redraw the notes box or search box while focused.
+  const ae = document.activeElement;
+  if (key === lastView && ae && (ae.id === 'nq' || (ae.id || '').startsWith('notes-'))) return;
+  const html = r.view === 'opportunities' ? vOpps() : r.view === 'applications' ? vApps() : r.view === 'network' ? vNetwork()
+    : r.view === 'meetings' ? vMeetings() : r.view === 'meeting' ? vMeeting(r.id) : r.view === 'employer' ? vEmployer(r.id) : vOverview();
+  const keepCov = $('cov-wrap')?.open, keepRuled = $('ruled-wrap')?.open;
+  const ta = document.querySelector('textarea.notes'); const draft = ta ? { id: ta.id, v: ta.value } : null;
+  const mb = document.querySelector('.mapbox'); const mscroll = mb ? [mb.scrollTop, mb.scrollLeft] : null;
+  $('view').innerHTML = `<div style="display:grid;gap:20px">${html}</div>`;
+  if (draft && key === lastView) { const t2 = $(draft.id); if (t2) t2.value = draft.v; }
+  if (mscroll && key === lastView) { const m2 = document.querySelector('.mapbox'); if (m2) { m2.scrollTop = mscroll[0]; m2.scrollLeft = mscroll[1]; } }
+  if (key === lastView) { if (keepCov && $('cov-wrap')) { $('cov-wrap').open = true; } if (keepRuled && $('ruled-wrap')) { $('ruled-wrap').open = true; } }
+  if (key !== lastView) window.scrollTo(0, 0);
+  lastView = key;
+  bindFolds();
+}
+window.addEventListener('hashchange', render);
+
+function bindFolds() {
+  const cw = $('cov-wrap'), rw = $('ruled-wrap');
+  if (cw) cw.addEventListener('toggle', async () => {
+    if (!cw.open || !db || cw.dataset.loaded) return; cw.dataset.loaded = '1';
+    try {
+      const snap = await db.collection('coverage').limit(300).get();
+      const rows = snap.docs.map(d => d.data() || {}).sort((a, b) => String(b.lastSwept || '').localeCompare(String(a.lastSwept || '')));
+      $('cov-count').textContent = rows.length ? `${rows.length} areas` : '';
+      $('cov').innerHTML = rows.map(r => `<div><span><b>${esc(r.area)}</b> <span class="lede">${esc(r.status || '')}</span></span><span class="r">${r.lastSwept ? 'Last swept ' + esc(r.lastSwept) + ' · ' : 'Not swept · '}Found ${esc(r.found || '0')}</span>${r.notes ? `<span class="r">${esc(r.notes)}</span>` : ''}</div>`).join('') || '<span class="lede">Nothing recorded yet.</span>';
+    } catch (e) { $('cov').innerHTML = '<span class="err">Could not load the swept areas.</span>'; }
+  });
+  if (rw) rw.addEventListener('toggle', async () => {
+    if (!rw.open || !db || rw.dataset.loaded) return; rw.dataset.loaded = '1';
+    try {
+      const snap = await db.collection('ruledout').orderBy('date', 'desc').limit(500).get();
+      $('ruled-count').textContent = snap.size ? `${snap.size} screened` : '';
+      $('ruled').innerHTML = snap.empty ? '<span class="lede">Nothing ruled out yet.</span>' : snap.docs.map(d => { const r = d.data() || {}; return `<div><span>${link(r.link, r.name)} <span class="lede">${esc(r.org || '')}${r.category ? ' · ' + esc(CAT_LABEL[r.category] || r.category) : ''}</span></span><span class="r">${esc(r.date || '')} · ${esc(r.reason || '')}</span></div>`; }).join('');
+    } catch (e) { $('ruled').innerHTML = '<span class="err">Could not load the ruled-out list.</span>'; }
+  });
+}
+
+/* ---------- interactions ---------- */
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const act = b.dataset.act, v = b.dataset.v, id = b.dataset.id;
+  if (act === 'ocat') { UI.ocat = v; saveUI(); render(); }
+  else if (act === 'ostat') { UI.ostat = v; saveUI(); render(); }
+  else if (act === 'wview') { UI.wview = v; saveUI(); render(); }
+  else if (act === 'afilt') { UI.afilt = v; saveUI(); render(); }
+  else if (act === 'nfilt') { UI.nfilt = v; NET.route = ''; saveUI(); render(); }
+  else if (act === 'nempf') { UI.nemp = v; NET.route = ''; saveUI(); render(); }
+  else if (act === 'npick') { e.preventDefault(); NET.sel = id; NET.route = ''; render(); }
+  else if (act === 'nroute') { NET.route = NET.route === b.dataset.k ? '' : b.dataset.k; render(); }
+  else if (act === 'nclear') { NET.route = ''; render(); }
+  else if (act === 'nemp') { location.hash = '#employer-' + b.dataset.k; }
+  else if (act === 'ostatus') {
+    const o = S.opps.find(x => x._id === id); if (!o) return;
+    const prev = o.status || 'new'; const next = prev === v ? 'new' : v;
+    o.status = next; render();
+    await write('opps', id, { status: next, statusChanged: todayStr() }, () => { o.status = prev; });
+  }
+  else if (act === 'mstatus') {
+    const m = S.meetings.find(x => x._id === id); if (!m) return;
+    const prev = m.status; m.status = v; render();
+    await write('meetings', id, { status: v, statusChanged: todayStr() }, () => { m.status = prev; });
+  }
+  else if (act === 'savenotes') {
+    const m = S.meetings.find(x => x._id === id); const ta = $('notes-' + hid(id)); if (!m || !ta) return;
+    $('notes-state').textContent = 'Saving…';
+    const ok = await write('meetings', id, { notes: ta.value, notesUpdated: todayStr() });
+    if (ok) { m.notes = ta.value; m.notesUpdated = todayStr(); $('notes-state').textContent = 'Saved'; }
+  }
+  else if (act === 'copy' || act === 'copytext') {
+    const el = act === 'copy' ? $(b.dataset.target) : $(b.dataset.src); if (!el) return;
+    const text = act === 'copy' ? el.value : el.innerText;
+    const done = () => { const t = b.textContent; b.textContent = 'Copied'; setTimeout(() => { b.textContent = t; }, 1400); };
+    try { await navigator.clipboard.writeText(text); done(); }
+    catch (x) {
+      if (act === 'copy') { el.focus(); el.select(); } else { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+      b.textContent = 'Selected, press Ctrl+C'; setTimeout(() => { b.textContent = act === 'copy' ? 'Copy path' : 'Copy email text'; }, 2200);
+    }
+  }
 });
 document.addEventListener('change', async e => {
-  const sel = e.target.closest('select[data-id]'); if (!sel || !db) return;
-  const id = sel.dataset.id; if (writing.has(id)) return;
-  writing.add(id); sel.disabled = true; $('err').hidden = true;
-  try { await db.collection('opps').doc(id).update({ status: sel.value, statusChanged: new Date().toISOString().slice(0, 10) }); }
-  catch (err) { $('err').textContent = 'Could not save that status change. Reload the page and try again.'; $('err').hidden = false; }
-  finally { writing.delete(id); sel.disabled = false; }
+  const t = e.target;
+  if (t.matches('select[data-act="stage"]')) {
+    const o = S.opps.find(x => x._id === t.dataset.id); if (!o) return;
+    const prev = o.stage; o.stage = t.value; render();
+    await write('opps', o._id, { stage: t.value, stageChanged: todayStr() }, () => { o.stage = prev; });
+  } else if (t.matches('input[data-act="asked"]')) {
+    const m = S.meetings.find(x => x._id === t.dataset.id); if (!m) return;
+    const set = new Set(Array.isArray(m.asked) ? m.asked : []); const i = Number(t.dataset.i);
+    t.checked ? set.add(i) : set.delete(i);
+    const prev = m.asked; m.asked = [...set].sort((a, b) => a - b); render();
+    await write('meetings', m._id, { asked: m.asked }, () => { m.asked = prev; });
+  }
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const t = e.target; if (!(t instanceof SVGElement) || !t.dataset || !t.dataset.act) return;
+  e.preventDefault(); t.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+});
+let nqTimer = null;
+document.addEventListener('input', e => {
+  if (e.target.id !== 'nq') return;
+  UI.nq = e.target.value; clearTimeout(nqTimer);
+  nqTimer = setTimeout(() => { lastView = ''; const pos = e.target.selectionStart; render(); const el = $('nq'); if (el) { el.focus(); try { el.setSelectionRange(pos, pos); } catch (x) {} } }, 200);
 });
 
-$('ruled-wrap').addEventListener('toggle', async () => {
-  if (!$('ruled-wrap').open || !db) return;
-  try {
-    const snap = await db.collection('ruledout').orderBy('date', 'desc').limit(60).get();
-    $('ruled').innerHTML = snap.empty ? '<span class="lede">Nothing ruled out yet.</span>' :
-      snap.docs.map(d => { const r = d.data() || {}; const url = safeUrl(r.link);
-        return `<div><span>${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(r.name)}</a>` : esc(r.name)} <span class="lede">${esc(r.org || '')}</span></span><span class="r">${esc(r.date || '')} · ${esc(r.reason || '')}</span></div>`; }).join('');
-  } catch (err) { $('ruled').innerHTML = '<span class="err">Could not load the ruled-out list.</span>'; }
-});
-
+/* ---------- data ---------- */
+function sub(col, key) {
+  db.collection(col).onSnapshot(snap => {
+    S[key] = snap.docs.map(d => ({ _id: d.id, ...(d.data() || {}) })); S.got.add(key); render();
+  }, () => { $('err').textContent = 'Part of the dashboard stopped updating. Reload the page.'; $('err').hidden = false; });
+}
 (async () => {
+  render();
   db = await (window.claude?.use ? window.claude.use('db') : Promise.resolve(null));
   if (!db) {
-    $('runline').textContent = 'Saved data is not available in this view.';
-    $('list').innerHTML = `<div class="empty"><b>The tracker's data could not load here.</b><span>Open it from your Claude artifacts while signed in.</span></div>`;
+    $('view').innerHTML = '<div class="empty"><b>The saved data could not load here.</b><span>Open this page from your Claude artifacts while signed in.</span></div>';
     return;
   }
-  db.collection('opps').onSnapshot(snap => {
-    opps = snap.docs.map(d => ({ _id: d.id, ...(d.data() || {}) }));
+  db.doc('settings/dashboard').onSnapshot(s => {
+    S.settings = s.exists ? (s.data() || {}) : {}; buildAlias();
+    if (S.settings.subtitle) $('brandline').textContent = S.settings.subtitle;
     render();
-  }, () => { $('err').textContent = 'The opportunity list stopped updating. Reload the page.'; $('err').hidden = false; });
-  db.collection('runs').orderBy('date', 'desc').limit(1).onSnapshot(snap => {
-    if (snap.empty) { $('runline').innerHTML = 'No weekly run recorded yet.'; return; }
-    const r = snap.docs[0].data() || {}; const t = r.totals || {};
-    $('runline').innerHTML = `<span>Last run <b>${esc(r.date || '')}</b></span><span><b>${t.candidates ?? 0}</b> candidates checked</span><span><b>${t.eligible ?? 0}</b> eligible</span><span><b>${t.confirm ?? 0}</b> to confirm</span><span><b>${t.rejected ?? 0}</b> ruled out</span>`;
-    $('ruled-count').textContent = '';
   }, () => {});
+  sub('opps', 'opps'); sub('watch', 'watch'); sub('contacts', 'contacts'); sub('meetings', 'meetings');
+  for (const a of AGENTS) {
+    db.collection(a.col).orderBy('date', 'desc').limit(1).onSnapshot(snap => {
+      S.runs[a.col] = snap.empty ? null : (snap.docs[0].data() || null); render();
+    }, () => {});
+  }
 })();
 </script>
