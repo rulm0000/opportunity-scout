@@ -24,6 +24,8 @@
   --warn-soft: #fbefd9;
   --bad: #a3312b;
   --bad-soft: #f8e4e2;
+  /* network map: orange = people you know; blues = closeness through others */
+  --direct: #c2571a; --c3: #4b9cd3; --c2: #93c1e2; --c1: #c9ddec; --edge: #9fb3c3; --hilite: #f2c14e;
   --font-display: "Public Sans", "Segoe UI", system-ui, sans-serif;
   --font-body: "Public Sans", "Segoe UI", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
@@ -33,12 +35,14 @@
     --bg: #0f151b; --surface: #161e26; --sunk: #121920; --fg: #e4ebf1; --muted: #9aaab8; --line: #2a3742; --line-strong: #5f7182;
     --accent: #7cb8e6; --accent-soft: #1b2c3a; --ink: #c9d6e2; --on-ink: #0f151b;
     --good: #6fd09b; --good-soft: #15291f; --warn: #f0b860; --warn-soft: #2e2414; --bad: #f08a83; --bad-soft: #321b1a; color-scheme: dark;
+    --direct: #f08a4b; --c3: #4b9cd3; --c2: #2f6e9c; --c1: #24506f; --edge: #3d5464; --hilite: #f2c14e;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0f151b; --surface: #161e26; --sunk: #121920; --fg: #e4ebf1; --muted: #9aaab8; --line: #2a3742; --line-strong: #5f7182;
   --accent: #7cb8e6; --accent-soft: #1b2c3a; --ink: #c9d6e2; --on-ink: #0f151b;
   --good: #6fd09b; --good-soft: #15291f; --warn: #f0b860; --warn-soft: #2e2414; --bad: #f08a83; --bad-soft: #321b1a; color-scheme: dark;
+  --direct: #f08a4b; --c3: #4b9cd3; --c2: #2f6e9c; --c1: #24506f; --edge: #3d5464; --hilite: #f2c14e;
 }
 body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
@@ -179,6 +183,43 @@ details.fold > summary { cursor: pointer; font-weight: 600; font-family: var(--f
 .person .r { color: var(--muted); font-size: 0.8125rem; grid-column: 1 / -1; }
 .person .sel { user-select: all; }
 
+/* Network map: You -> how you reach them -> person -> employer */
+.netgrid { --nw: min(1320px, calc(100vw - 48px)); display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); gap: 14px; align-items: start; width: max(100%, var(--nw)); margin-left: min(0px, calc((100% - var(--nw)) / 2)); }
+@media (max-width: 900px) { .netgrid { grid-template-columns: 1fr; } }
+.mapwrap { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; min-width: 0; overflow: hidden; }
+.mapbox { overflow: auto; max-height: 76vh; }
+.mapbox svg { display: block; width: 100%; min-width: 700px; height: auto; }
+.mapbox text { fill: var(--fg); font-family: var(--font-body); }
+.m-col { font: 600 10px var(--font-mono); fill: var(--muted); letter-spacing: 0.08em; }
+.m-edge { fill: none; stroke: var(--edge); }
+.m-edge.direct { stroke: var(--direct); }
+.m-edge.hub { stroke: var(--accent); opacity: 0.55; }
+.m-edge.later { opacity: 0.45; }
+.m-node { cursor: pointer; stroke: var(--surface); stroke-width: 1.5; }
+.m-hub { fill: var(--surface); stroke: var(--ink); stroke-width: 1.5; cursor: pointer; }
+.m-emp { cursor: pointer; }
+.m-hl { font: 600 10.5px var(--font-body); }
+.m-sub { font: 500 9.5px var(--font-mono); fill: var(--muted) !important; }
+.m-pl { font: 500 10.5px var(--font-body); pointer-events: none; }
+.m-pl.on { font-weight: 700; }
+.m-pl.off { fill: var(--muted) !important; }
+.m-el { font: 600 12px var(--font-body); cursor: pointer; }
+.m-hl, .m-sub, .m-pl, .m-el, .m-col { paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
+.m-dim { opacity: 0.12; }
+.m-sel { stroke: var(--hilite) !important; stroke-width: 3 !important; }
+.mlegend { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 10px 14px; border-top: 1px solid var(--line); font-size: 0.75rem; color: var(--muted); }
+.mlegend span { display: inline-flex; align-items: center; gap: 6px; }
+.mdot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.ndetail { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 64px); }
+.ndetail .who { font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; margin: 0; }
+.ndetail dl { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 6px 10px; margin: 0; font-size: 0.84rem; }
+.ndetail dt { color: var(--muted); }
+.ndetail dd { margin: 0; overflow-wrap: anywhere; }
+.echips { display: flex; flex-wrap: wrap; gap: 6px; }
+.echips button { font: inherit; font-size: 0.78rem; font-weight: 600; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; }
+.echips button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
+.echips .n { font-weight: 500; opacity: 0.75; margin-left: 4px; }
+
 /* Meetings */
 .mtg { display: grid; grid-template-columns: 84px minmax(0, 1fr) auto; gap: 6px 16px; align-items: start; text-decoration: none; color: var(--fg); }
 .mtg:hover h3 { color: var(--accent); }
@@ -294,7 +335,8 @@ const AGENTS = [
 const S = { opps: [], watch: [], contacts: [], meetings: [], settings: {}, runs: {}, got: new Set() };
 let db = null;
 const writing = new Set();
-const UI = { ocat: 'all', ostat: 'active', wview: 'soon', afilt: 'active', nfilt: 'motion', nq: '' };
+const UI = { ocat: 'all', ostat: 'active', wview: 'soon', afilt: 'active', nfilt: 'all', nemp: '', nq: '' };
+const NET = { sel: '', route: '' };
 try { const s = JSON.parse(localStorage.getItem('scout-ui') || 'null'); if (s && typeof s === 'object') Object.assign(UI, s, { nq: '' }); } catch (e) {}
 function saveUI() { try { localStorage.setItem('scout-ui', JSON.stringify(UI)); } catch (e) {} }
 
@@ -579,12 +621,125 @@ function vApps() {
   <div class="list">${!S.got.has('opps') ? '<div class="empty"><b>Loading applications…</b></div>' : rows.length ? rows.map(appCard).join('') : `<div class="empty"><b>No applications in this view.</b><span>Mark an opportunity Applied, or set its stage, and it appears here.</span></div>`}</div>`;
 }
 
+/* Network map, same layout as the original job network map: You -> route -> person -> employer. */
+const INTRO_LABEL = { trusted: "someone you'd ask", insider: 'works there and knows you', maybe: 'maybe ready to ask', later: 'not ready to ask yet' };
+const IORD = { trusted: 0, insider: 1, maybe: 2, later: 3 };
+const ACTIVE = new Set(['agreed', 'introduced', 'replied', 'met']);
+const closeOf = c => Number(c.closeness) || 0;
+function routeKey(c) {
+  if (closeOf(c) >= 4 || c.intro === 'direct') return '__direct';
+  if (c.connector) return 'c:' + c.connector;
+  if (c.intro === 'scout lead') return '__lead';
+  return '__prog';
+}
+function nodeColor(c) {
+  const cl = closeOf(c);
+  if (cl >= 4 || c.intro === 'direct') return 'var(--direct)';
+  if (c.intro === 'scout lead') return 'var(--c1)';
+  if (cl === 3 || c.connector) return c.intro === 'later' ? 'var(--edge)' : 'var(--c3)';
+  return 'var(--c2)';
+}
+function buildRoutes(list) {
+  const R = {};
+  for (const c of list) {
+    const k = routeKey(c);
+    if (!R[k]) R[k] = k === '__direct' ? { key: k, kind: 'direct', label: 'You know them', people: [] }
+      : k === '__lead' ? { key: k, kind: 'lead', label: 'No route yet', people: [] }
+      : k === '__prog' ? { key: k, kind: 'program', label: 'Same school or program', people: [] }
+      : { key: k, kind: 'connector', label: c.connector, intro: 'later', people: [] };
+    const r = R[k]; r.people.push(c);
+    if (r.kind === 'connector' && (IORD[c.intro] ?? 3) < (IORD[r.intro] ?? 3)) r.intro = c.intro;
+  }
+  const kindOrd = { direct: 0, connector: 1, program: 2, lead: 3 };
+  const routes = Object.values(R);
+  for (const r of routes) {
+    const act = r.people.filter(c => ACTIVE.has(c.status)).length;
+    r.act = act;
+    r.sub = r.kind === 'direct' ? 'emailed, met or worked with' : r.kind === 'lead' ? 'reach out directly' : r.kind === 'program' ? 'shared school or program'
+      : (INTRO_LABEL[r.intro] || 'connector') + (act ? ` · ${act} in motion` : '');
+  }
+  routes.sort((a, b) => kindOrd[a.kind] - kindOrd[b.kind] || (IORD[a.intro] ?? 0) - (IORD[b.intro] ?? 0) || b.act - a.act || b.people.length - a.people.length || a.label.localeCompare(b.label));
+  return routes;
+}
+function netMap(list, routes) {
+  if (!list.length) return '';
+  const short = s => String(s || '').replace(/\s*\(.*?\)\s*/g, ' ').trim();
+  const ridx = Object.fromEntries(routes.map((r, i) => [r.key, i]));
+  const items = list.slice().sort((a, b) => ridx[routeKey(a)] - ridx[routeKey(b)] || empRank(contactKey(a)) - empRank(contactKey(b)) || (b.priority || 0) - (a.priority || 0));
+  const X = { me: 44, route: 200, item: 452, emp: 724 }, ROW = 22, TOP = 64;
+  const H = Math.max(260, TOP + items.length * ROW + 30);
+  items.forEach((c, i) => { c.__y = TOP + i * ROW; });
+  for (const r of routes) { const ys = items.filter(c => routeKey(c) === r.key).map(c => c.__y); r.y = ys.reduce((s, y) => s + y, 0) / ys.length; }
+  for (let i = 1; i < routes.length; i++) if (routes[i].y - routes[i - 1].y < 30) routes[i].y = routes[i - 1].y + 30;
+  const emps = [...new Set(items.map(contactKey))].sort((a, b) => empRank(a) - empRank(b) || employerLabel(a).localeCompare(employerLabel(b)));
+  const eGap = Math.min(56, (H - TOP - 40) / Math.max(emps.length - 1, 1));
+  const ey = Object.fromEntries(emps.map((k, i) => [k, TOP + i * eGap]));
+  const meY = TOP + 6;
+  const bez = (x1, y1, x2, y2) => { const mx = (x1 + x2) / 2; return `M${x1},${y1.toFixed(1)} C${mx},${y1.toFixed(1)} ${mx},${y2.toFixed(1)} ${x2},${y2.toFixed(1)}`; };
+  const dim = c => (NET.route && routeKey(c) !== NET.route) ? ' m-dim' : '';
+  const rdim = r => (NET.route && r.key !== NET.route) ? ' m-dim' : '';
+  const edim = k => (NET.route && !items.some(c => contactKey(c) === k && routeKey(c) === NET.route)) ? ' m-dim' : '';
+  let e = '', n = '', l = '';
+  for (const [t, x] of [['YOU', X.me], ['HOW YOU REACH THEM', X.route], ['PERSON', X.item], ['EMPLOYER', X.emp]]) l += `<text class="m-col" x="${x}" y="30" text-anchor="${x === X.me ? 'middle' : 'start'}">${t}</text>`;
+  for (const r of routes) {
+    const later = r.intro === 'later', w = r.kind === 'direct' ? 4 : later || r.kind !== 'connector' ? 1.3 : Math.min(6, 1.6 + r.people.length * 0.45);
+    e += `<path class="m-edge ${r.kind === 'direct' ? 'direct' : later ? 'later' : r.kind === 'connector' ? 'hub' : ''}${rdim(r)}" d="${bez(X.me + 20, meY, X.route - 8, r.y)}" stroke-width="${w.toFixed(1)}"${r.kind !== 'connector' && r.kind !== 'direct' || later ? ' stroke-dasharray="3 4"' : ''}/>`;
+    const st = r.kind === 'direct' ? 'stroke:var(--direct);stroke-width:2.5' : r.intro === 'trusted' ? 'stroke:var(--accent);stroke-width:2.5' : later || r.kind === 'lead' ? 'stroke:var(--edge);stroke-dasharray:2 2' : '';
+    n += `<circle class="m-hub${rdim(r)}${NET.route === r.key ? ' m-sel' : ''}" cx="${X.route}" cy="${r.y.toFixed(1)}" r="${r.kind === 'direct' ? 9 : 6.5}" style="${st}" data-act="nroute" data-k="${esc(r.key)}" tabindex="0" role="button" aria-label="${esc(r.label)}: ${r.people.length}"/>`;
+    l += `<text class="m-hl${rdim(r)}" x="${X.route + 14}" y="${(r.y - 1).toFixed(1)}"${later ? ' style="font-weight:500"' : ''}>${esc(short(r.label))}</text><text class="m-sub${rdim(r)}" x="${X.route + 14}" y="${(r.y + 11).toFixed(1)}">${esc(r.sub)}</text>`;
+  }
+  for (const c of items) {
+    const r = routes[ridx[routeKey(c)]], later = r.intro === 'later' || r.kind === 'lead', cl = closeOf(c), direct = r.kind === 'direct';
+    e += `<path class="m-edge${direct ? ' direct' : ''}${dim(c)}" d="${bez(X.route + 8, r.y, X.item - 8, c.__y)}" stroke="${direct ? '' : (later ? 'var(--edge)' : nodeColor(c))}" stroke-width="${direct ? 2.6 : !later && cl >= 3 ? 1.6 : 1}"${later || (!direct && cl <= 2) ? ' stroke-dasharray="2 4"' : ''} opacity="${later ? 0.6 : 0.9}"/>`;
+    e += `<path class="m-edge${dim(c)}" d="${bez(X.item + 168, c.__y, X.emp - 8, ey[contactKey(c)])}" stroke-width="0.8" opacity="0.5"/>`;
+    const big = direct || ACTIVE.has(c.status) || c.status === 'asked';
+    n += `<circle class="m-node${dim(c)}${NET.sel === c._id ? ' m-sel' : ''}" cx="${X.item}" cy="${c.__y}" r="${big ? 7.5 : 5.5}" fill="${nodeColor(c)}" data-act="npick" data-id="${esc(c._id)}" tabindex="0" role="button" aria-label="${esc(c.person)}, ${esc(employerLabel(contactKey(c)))}"/>`;
+    const star = ACTIVE.has(c.status) ? '★ ' : '', chk = c.factCheck === 'pass' || c.factCheck === 'fix' ? ' ✓' : '';
+    l += `<text class="m-pl${dim(c)}${star ? ' on' : later ? ' off' : ''}" x="${X.item + 12}" y="${c.__y + 4}">${esc(star + short(c.person) + chk)}</text>`;
+  }
+  for (const k of emps) {
+    n += `<circle class="m-emp${edim(k)}" cx="${X.emp}" cy="${ey[k].toFixed(1)}" r="5" fill="var(--ink)" data-act="nemp" data-k="${esc(k)}"/>`;
+    l += `<text class="m-el${edim(k)}" x="${X.emp + 12}" y="${(ey[k] + 4).toFixed(1)}" data-act="nemp" data-k="${esc(k)}">${esc(short(employerLabel(k)))}</text>`;
+  }
+  const meSvg = `<circle cx="${X.me}" cy="${meY}" r="20" fill="var(--ink)"/><text x="${X.me}" y="${meY + 4}" text-anchor="middle" style="fill:var(--on-ink);font:700 12px var(--font-display)">You</text>`;
+  return `<svg viewBox="0 0 940 ${H}" role="img" aria-label="Network map: how you reach each person, and where they work">${e}${meSvg}${n}${l}</svg>`;
+}
+function netDetail(list, routes) {
+  if (NET.route) {
+    const r = routes.find(x => x.key === NET.route);
+    if (r) return `<div class="eyebrow">Route</div><p class="who">${esc(r.label)}</p><p class="small lede">${esc(r.sub)} · ${r.people.length} ${r.people.length === 1 ? 'person' : 'people'}</p>
+      <dl>${r.people.map(c => `<dt>${esc(CSTAT[c.status] || c.status || '')}</dt><dd><a href="#" data-act="npick" data-id="${esc(c._id)}">${esc(c.person)}</a><br><span class="lede">${esc(employerLabel(contactKey(c)))}</span></dd>`).join('')}</dl>
+      <p><button type="button" class="btn" data-act="nclear">Show everyone</button></p>`;
+  }
+  const c = S.contacts.find(x => x._id === NET.sel) || list.slice().sort((a, b) => (ACTIVE.has(b.status) - ACTIVE.has(a.status)) || (b.priority || 0) - (a.priority || 0))[0];
+  if (!c) return '<p class="small lede">No one in this view.</p>';
+  const k = contactKey(c), m = meetingForContact(c._id), r = routes.find(x => x.key === routeKey(c));
+  const fc = c.factCheck === 'pass' ? 'Checked, confirmed' : c.factCheck === 'fix' ? 'Checked, corrected' : c.factCheck ? esc(c.factCheck) : '';
+  const route = r ? (r.kind === 'connector' ? `Through ${esc(c.connector)} (${esc(INTRO_LABEL[c.intro] || c.intro || 'connector')})` : esc(r.label)) : '';
+  return `<div class="eyebrow">Selected</div><p class="who">${esc(c.person)}</p>
+    <p class="small lede">${esc(c.title || '')}${c.title ? ' · ' : ''}<a href="#employer-${esc(k)}">${esc(employerLabel(k))}</a></p>
+    <div class="chips" style="margin:8px 0 10px"><span class="chip ${ACTIVE.has(c.status) ? 'ok' : c.status === 'not_asked' ? 'out' : 'check'}">${esc(CSTAT[c.status] || c.status || '')}</span>${c.closeness ? `<span class="chip cat">Closeness ${esc(c.closeness)} of 5</span>` : ''}${typeof c.priority === 'number' ? `<span class="chip out">Priority ${esc(c.priority)}</span>` : ''}</div>
+    <dl>${route ? `<dt>Route</dt><dd>${route}</dd>` : ''}${c.how ? `<dt>Connection</dt><dd>${esc(c.how)}</dd>` : ''}${c.statusNote ? `<dt>Status</dt><dd>${esc(c.statusNote)}</dd>` : ''}${c.action ? `<dt>Next step</dt><dd>${esc(c.action)}</dd>` : ''}${c.email ? `<dt>Email</dt><dd><span class="sel mono" style="user-select:all">${esc(c.email)}</span></dd>` : ''}${c.evidence ? `<dt>Proof</dt><dd>${esc(c.evidence)}</dd>` : ''}${fc ? `<dt>Fact check</dt><dd>${fc}</dd>` : ''}${m ? `<dt>Meeting</dt><dd><a href="#meeting-${esc(hid(m._id))}">Prep brief${mFmt(m) ? ', ' + esc(mFmt(m).wd + ' ' + mFmt(m).md) : ''}</a></dd>` : ''}</dl>`;
+}
+
 function vNetwork() {
   const q = UI.nq.trim().toLowerCase();
-  const pass = c => (UI.nfilt === 'all' ? true : UI.nfilt === 'motion' ? MOTION.has(c.status) : c.status === UI.nfilt) &&
+  const pass0 = c => (UI.nfilt === 'all' ? true : UI.nfilt === 'motion' ? MOTION.has(c.status) : c.status === UI.nfilt) &&
     (!q || [c.person, c.employer, c.title, c.connector].some(x => String(x || '').toLowerCase().includes(q)));
+  const base = S.contacts.filter(pass0);
+  const ecount = {}; for (const c of base) { const k = contactKey(c); ecount[k] = (ecount[k] || 0) + 1; }
+  if (UI.nemp && !ecount[UI.nemp]) UI.nemp = '';
+  const pass = c => pass0(c) && (!UI.nemp || contactKey(c) === UI.nemp);
+  const shown = base.filter(pass);
+  const routes = buildRoutes(shown);
+  if (NET.route && !routes.some(r => r.key === NET.route)) NET.route = '';
+  const ekeys = Object.keys(ecount).sort((a, b) => empRank(a) - empRank(b) || employerLabel(a).localeCompare(employerLabel(b)));
+  const echips = `<div class="echips" role="group" aria-label="Employer"><button type="button" data-act="nempf" data-v="" aria-pressed="${!UI.nemp}">All employers<span class="n">${base.length}</span></button>${ekeys.map(k => `<button type="button" data-act="nempf" data-v="${esc(k)}" aria-pressed="${UI.nemp === k}">${esc(employerLabel(k))}<span class="n">${ecount[k]}</span></button>`).join('')}</div>`;
+  const map = S.got.has('contacts') && shown.length ? `<div class="netgrid"><div class="mapwrap"><div class="mapbox">${netMap(shown, routes)}</div>
+    <div class="mlegend"><span><i class="mdot" style="background:var(--direct)"></i>You know them</span><span><i class="mdot" style="background:var(--c3)"></i>Through someone you'd ask</span><span><i class="mdot" style="background:var(--edge)"></i>Through someone you're not ready to ask</span><span><i class="mdot" style="background:var(--c2)"></i>Same school or program</span><span><i class="mdot" style="background:var(--c1)"></i>Scout lead, no route yet</span><span>★ intro agreed or under way</span><span>✓ fact-checked</span></div></div>
+    <div class="card ndetail">${netDetail(shown, routes)}</div></div>` : '';
   const groups = {};
-  for (const c of S.contacts.filter(pass)) { const k = contactKey(c); (groups[k] = groups[k] || []).push(c); }
+  for (const c of shown) { const k = contactKey(c); (groups[k] = groups[k] || []).push(c); }
   const keys = Object.keys(groups).sort((a, b) => (empRank(a) - empRank(b)) || employerLabel(a).localeCompare(employerLabel(b)));
   const segs = NFILT.map(([k, l]) => `<button type="button" data-act="nfilt" data-v="${k}" aria-pressed="${UI.nfilt === k}">${esc(l)}<span class="n">${k === 'all' ? S.contacts.length : k === 'motion' ? S.contacts.filter(c => MOTION.has(c.status)).length : S.contacts.filter(c => c.status === k).length}</span></button>`).join('');
   const body = !S.got.has('contacts') ? '<div class="empty"><b>Loading contacts…</b></div>' : keys.length ? keys.map(k => {
@@ -593,9 +748,11 @@ function vNetwork() {
     const no = S.opps.filter(o => isOpenOpp(o) && orgKey(o.org) === k).length;
     return `<div class="grp"><div class="grp-h"><h3><a href="#employer-${esc(k)}">${esc(employerLabel(k))}</a> <span class="lede" style="font-weight:400">${list.length}</span></h3><span class="small lede">${na ? na + ' application' + (na > 1 ? 's' : '') : ''}${na && no ? ' · ' : ''}${no ? no + ' open' : ''}</span></div><div class="people">${list.map(personRow).join('')}</div></div>`;
   }).join('') : `<div class="empty"><b>No one in this view.</b><span>${S.contacts.length ? 'Try another filter or search.' : 'The network tools and scouts add people here.'}</span></div>`;
-  return `<section class="sect"><h1>Network</h1><p class="lede">People at employers you are applying to, who can introduce you, and where each conversation stands.</p></section>
+  return `<section class="sect"><h1>Network</h1><p class="lede">Who can get you in the door: everyone at the places you applied whom you can reach, and the route to each one. Orange lines are people you already know; solid blue lines run through people you would ask; grey dashed lines run through people you are not ready to ask yet. Click a route or a person for details.</p></section>
   <div class="filters"><div class="seg" role="group" aria-label="Contact filter">${segs}</div><input class="search" id="nq" type="search" placeholder="Search people or employers" value="${esc(UI.nq)}" aria-label="Search people or employers"></div>
-  <div class="list">${body}</div>`;
+  ${S.got.has('contacts') && Object.keys(ecount).length ? echips : ''}
+  ${map}
+  <section class="sect"><h2>By employer <span class="lede">${shown.length} ${shown.length === 1 ? 'person' : 'people'}</span></h2><div class="list">${body}</div></section>`;
 }
 
 function vMeetings() {
@@ -690,8 +847,10 @@ function render() {
     : r.view === 'meetings' ? vMeetings() : r.view === 'meeting' ? vMeeting(r.id) : r.view === 'employer' ? vEmployer(r.id) : vOverview();
   const keepCov = $('cov-wrap')?.open, keepRuled = $('ruled-wrap')?.open;
   const ta = document.querySelector('textarea.notes'); const draft = ta ? { id: ta.id, v: ta.value } : null;
+  const mb = document.querySelector('.mapbox'); const mscroll = mb ? [mb.scrollTop, mb.scrollLeft] : null;
   $('view').innerHTML = `<div style="display:grid;gap:20px">${html}</div>`;
   if (draft && key === lastView) { const t2 = $(draft.id); if (t2) t2.value = draft.v; }
+  if (mscroll && key === lastView) { const m2 = document.querySelector('.mapbox'); if (m2) { m2.scrollTop = mscroll[0]; m2.scrollLeft = mscroll[1]; } }
   if (key === lastView) { if (keepCov && $('cov-wrap')) { $('cov-wrap').open = true; } if (keepRuled && $('ruled-wrap')) { $('ruled-wrap').open = true; } }
   if (key !== lastView) window.scrollTo(0, 0);
   lastView = key;
@@ -728,7 +887,12 @@ document.addEventListener('click', async e => {
   else if (act === 'ostat') { UI.ostat = v; saveUI(); render(); }
   else if (act === 'wview') { UI.wview = v; saveUI(); render(); }
   else if (act === 'afilt') { UI.afilt = v; saveUI(); render(); }
-  else if (act === 'nfilt') { UI.nfilt = v; saveUI(); render(); }
+  else if (act === 'nfilt') { UI.nfilt = v; NET.route = ''; saveUI(); render(); }
+  else if (act === 'nempf') { UI.nemp = v; NET.route = ''; saveUI(); render(); }
+  else if (act === 'npick') { e.preventDefault(); NET.sel = id; NET.route = ''; render(); }
+  else if (act === 'nroute') { NET.route = NET.route === b.dataset.k ? '' : b.dataset.k; render(); }
+  else if (act === 'nclear') { NET.route = ''; render(); }
+  else if (act === 'nemp') { location.hash = '#employer-' + b.dataset.k; }
   else if (act === 'ostatus') {
     const o = S.opps.find(x => x._id === id); if (!o) return;
     const prev = o.status || 'new'; const next = prev === v ? 'new' : v;
@@ -770,6 +934,11 @@ document.addEventListener('change', async e => {
     const prev = m.asked; m.asked = [...set].sort((a, b) => a - b); render();
     await write('meetings', m._id, { asked: m.asked }, () => { m.asked = prev; });
   }
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const t = e.target; if (!(t instanceof SVGElement) || !t.dataset || !t.dataset.act) return;
+  e.preventDefault(); t.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 });
 let nqTimer = null;
 document.addEventListener('input', e => {

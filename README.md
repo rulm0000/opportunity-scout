@@ -21,7 +21,7 @@ A system of scheduled Claude agents for a doctoral student's job and funding sea
 | Overview | What needs you next (meetings, application steps, close deadlines) in date order, and when each agent last ran |
 | Opportunities | Verified finds, programs to watch, swept areas, and the ruled-out list |
 | Applications | Each application's stage, next step, closing date, and the path to your materials folder; change the stage from the page |
-| Network | People at each employer, who can introduce you, and where each conversation stands |
+| Network | A route map (you, then who can introduce you, then the person, then the employer) and the people at each employer with where each conversation stands |
 | Meetings | A brief for every call or interview: who they are, what their group does, a diagram of how their work connects to yours, ranked questions you can tick off, and your notes |
 
 Every employer name opens an employer page that gathers its applications, people, meetings and open roles. Your own choices save to the page's database, and the agents leave them alone. `tracker/README.md` has the data model.

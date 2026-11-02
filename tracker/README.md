@@ -7,7 +7,7 @@
 | Overview | What needs you next: meetings, application steps and deadlines in date order, plus when each agent last ran | Built from the other tabs |
 | Opportunities | Verified grants, scholarships, internships and jobs you are eligible for, programs to watch, swept areas, and a ruled-out list | Weekly opportunity scout, internship scout |
 | Applications | Everything you applied to or are preparing, with its stage, next step, closing date and the folder that holds your materials | You (stage), the scouts (from employer emails) |
-| Network | People at those employers, who can introduce you, and where each conversation stands | Network tools in `network/`, a reply-check task |
+| Network | A route map in the style of `network/map_template.html` (you, then who can introduce you, then the person, then the employer; click any route or person), plus the people at each employer and where each conversation stands | Network tools in `network/`, a reply-check task |
 | Meetings | Each call or interview with a prep brief: who they are, what their group does, a diagram of how their work connects to yours, ranked questions, your notes | Meeting prep task (`agents/meeting_prep_prompt.md`) |
 
 Every employer name links to an employer page that gathers its applications, people, meetings, open roles and watch items in one place. Your own choices (an opportunity's status, an application's stage, which questions you asked, meeting notes) save to the database, and the agents are told to leave them alone.
@@ -46,7 +46,7 @@ An opportunity shows on the Applications tab once its status is `applied` or it 
 Programs that have not posted yet or pay below your floor: `org`, `name`, `status` (`watching`, `not_started`, `window_open`), `checkBy`, `deadline`, `payHr`, `floor` (`at`, `below`, `unknown`), `link`, `contact`, `nextAction`, `updates` (list of `{date, note}`).
 
 ### contacts
-People at employers: `employer`, `employerKey`, `person`, `title`, `connector` (who would introduce you), `intro`, `status` (`not_asked`, `draft`, `asked`, `agreed`, `introduced`, `replied`, `met`), `statusNote`, `action`, `email` (only from an official page or a corresponding-author line), `priority`, `source`. `network/linkedin_import.py` and the sweeps in `network/` produce records in this shape.
+People at employers: `employer`, `employerKey`, `person`, `title`, `connector` (who would introduce you), `intro`, `status` (`not_asked`, `draft`, `asked`, `agreed`, `introduced`, `replied`, `met`), `statusNote`, `action`, `email` (only from an official page or a corresponding-author line), `priority`, `source`, plus `closeness` (1 to 5) for the map: 4 or 5 means you know them, 3 means through the connector. `network/linkedin_import.py` and the sweeps in `network/` produce records in this shape.
 
 ### meetings
 One document per meeting; `doc_id` is the contact's id when there is one.
