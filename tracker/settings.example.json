@@ -1,0 +1,10 @@
+{
+ "_note": "Optional. Save as the document settings/dashboard in the tracker's database (ArtifactData set, collection settings, doc_id dashboard). employers groups the different names one employer goes by (Johnson & Johnson, J&J, Janssen) under one key and sets the order employers are listed in. match is a case-insensitive regular expression. payFloor labels watch rows that pay below it.",
+ "subtitle": "Opportunities, applications, people and meetings",
+ "payFloor": 40,
+ "employers": [
+  {"key": "acme", "label": "Acme Pharma", "match": "acme"},
+  {"key": "northwind", "label": "Northwind Health", "match": "northwind|nw health"},
+  {"key": "contoso", "label": "Contoso Analytics", "match": "contoso"}
+ ]
+}

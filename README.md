@@ -1,24 +1,38 @@
 # Opportunity Scout
 
-A weekly system that finds grants, industry funding, scholarships and awards, and jobs a doctoral student is actually eligible for, and keeps them in one tracker.
+A system of scheduled Claude agents for a doctoral student's job and funding search. It finds grants, industry funding, scholarships, internships and jobs you are actually eligible for, then tracks what happens next in one dashboard: your applications, the people who can introduce you at each employer, and a prep brief for every meeting.
 
 ![Opportunity Scout weekly pipeline](docs/opportunity-scout-pipeline.png)
 
 **How a weekly run works.** Numbers match the figure.
 (1) Databases are read directly with code: the full daily Grants.gov database (every federal opportunity, scored with GROW's matcher), the NIH Guide and NSF funding feeds, and employer job boards.
-(2) Search agents cover only sources that have no database: foundations, societies and conferences, UNC and North Carolina awards, national scholarships, industry funding, and competitions. Each runs at least 15 searches.
+(2) Search agents cover only sources that have no database: foundations, societies and conferences, your own university's and state's awards, national scholarships, industry funding, and competitions. Each runs at least 15 searches.
 (3) Recent funding and job emails add leads.
 (4) A separate verifier agent, which never sees the searchers' reasoning, opens each official page and checks nine eligibility rules: career stage, place, field, timing, award overlap, personal criteria, values, job rules, and proof on the official page.
 (5) Any search agent with fewer than 4 passing finds searches again on new source types, and a fresh verifier checks the new batch.
 (6) Passing items go to the tracker as Eligible, or as Confirm with the one fact to check; the user sets each item's status. Rejections go to a ruled-out list so they never come back. An editable version of the figure is in `docs/opportunity-scout-pipeline.pptx`.
+
+## The dashboard
+
+`tracker/opportunity-scout.html` is one page with five tabs, kept current by the scheduled agents:
+
+| Tab | What it shows |
+|---|---|
+| Overview | What needs you next (meetings, application steps, close deadlines) in date order, and when each agent last ran |
+| Opportunities | Verified finds, programs to watch, swept areas, and the ruled-out list |
+| Applications | Each application's stage, next step, closing date, and the path to your materials folder; change the stage from the page |
+| Network | People at each employer, who can introduce you, and where each conversation stands |
+| Meetings | A brief for every call or interview: who they are, what their group does, a diagram of how their work connects to yours, ranked questions you can tick off, and your notes |
+
+Every employer name opens an employer page that gathers its applications, people, meetings and open roles. Your own choices save to the page's database, and the agents leave them alone. `tracker/README.md` has the data model.
 
 ## What's here
 
 | Folder | What it is |
 |---|---|
 | `code/` | The database readers and the grant matcher. `federal_db.py` pulls the full Grants.gov database, `feeds.py` reads the NIH and NSF feeds, `jobs_feeds.py` reads employer job boards listed in `employers.json`, and `find_grants.py` plus `matcher.py` are a no-AWS copy of GROW's keyword search and scoring. |
-| `agents/` | Instructions for the scheduled Claude task: search agents, the verifier, the retry loop, and the eligibility checklist, with personal details replaced by fill-in fields. |
-| `tracker/` | The tracker page that stores verified opportunities, the ruled-out list, and a run log. |
+| `agents/` | Instructions for the scheduled Claude tasks, with personal details replaced by fill-in fields: the weekly scout (search agents, verifier, retry loop, eligibility checklist), meeting prep (`meeting_prep_prompt.md`), and the application-tracking rules any email-reading agent should carry (`application_tracking.md`). |
+| `tracker/` | The dashboard page, an example settings file, and the data model (`tracker/README.md`). |
 | `docs/` | The pipeline figure (PNG and editable PowerPoint). |
 | `network/` | After you apply: finds people at those employers you can reach through collaborators (PubMed co-author sweeps, one-employer deep dives), builds a map of the routes, and stages Outlook intro drafts. Personal data stays local. See `network/README.md`. |
 
@@ -38,13 +52,14 @@ python find_grants.py     # GROW's original keyword search
 
 It needs only Python, with no packages to install. Edit `code/profile.json` to change the research profile and `code/employers.json` to change the employers. See `code/README.md` for details and known limits.
 
-## Set up the weekly agents
+## Set up the agents
 
-1. Publish `tracker/opportunity-scout.html` as a Claude artifact with the `db` capability, and add the files in `code/` to it under `code/`.
-2. Fill in every `{{...}}` field in `agents/weekly_scout_prompt.md`.
-3. Create a weekly scheduled task in Claude with that prompt.
+1. Publish `tracker/opportunity-scout.html` as a Claude artifact with the `db` capability, and add the files in `code/` to it under `code/`. Optionally save an edited `tracker/settings.example.json` as the `settings/dashboard` document.
+2. Fill in every `{{...}}` field in `agents/weekly_scout_prompt.md`, add the block in `agents/application_tracking.md` to it, and create a weekly scheduled task in Claude with that prompt.
+3. Fill in `agents/meeting_prep_prompt.md` and create a scheduled task that runs it twice a day, with your email and calendar connected.
+4. Optional: fill the Network tab with the tools in `network/` (co-author sweeps, an employer deep dive, or `linkedin_import.py` for a LinkedIn connections export).
 
-The tracker page only works inside Claude, because it saves to the artifact's database.
+The dashboard only works inside Claude, because it saves to the artifact's database.
 
 ## Credit and license
 

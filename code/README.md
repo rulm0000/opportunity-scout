@@ -10,9 +10,10 @@ Everything here runs on any computer with Python 3. No packages to install, no A
 | `feeds.py` | Reads the NIH Guide and NSF funding feeds and keeps student-relevant notices. These catch new notices before they reach the database. | A few seconds |
 | `jobs_feeds.py` | Reads the public job boards (Greenhouse, Ashby, Lever, Workday) of the employers in `employers.json` and keeps U.S. research roles. | About 20 seconds |
 | `employers.json` | The employer list for `jobs_feeds.py`. Add or remove employers here. | |
+| `paper_network.py` | Finds non-academic employers (consultancies, data firms, pharma teams) through author affiliations on recent PubMed papers in your topics. Copy `paper_topics.example.json` to `paper_topics.json` and write your own searches. | A few minutes |
 | `find_grants.py` | GROW's original search: keyword searches on Grants.gov, then scoring and ranking. Kept for comparison. | About 90 seconds |
 | `matcher.py` | GROW's scoring code. Only its AWS database calls were replaced with a local profile file. Tested against GROW's original: identical scores. | |
-| `profile.json` | The research profile used for scoring. Edit this to change what counts as a match. | |
+| `profile.json` | An example research profile used for scoring. Replace its values with your own. | |
 
 Keep all the files in the same folder.
 
@@ -26,6 +27,8 @@ Keep all the files in the same folder.
 python federal_db.py --out federal     # writes federal.json
 python feeds.py --out feeds            # writes feeds.json
 python jobs_feeds.py --out jobs        # writes jobs.json
+python jobs_feeds.py --mode internships --out interns   # internship, co-op and fellowship titles
+python paper_network.py --config paper_topics.json --out papers --since 2024
 python find_grants.py                  # writes grant_matches.csv and .json
 ```
 
@@ -63,4 +66,4 @@ In `employers.json`, each employer needs its job-board type and board name (for 
 
 ## Additions not in GROW
 
-`federal_db.py`, `feeds.py`, `jobs_feeds.py`, and `employers.json` are new. In `find_grants.py`, the `--queries` and `--top` settings, the mechanism column (R01, F31, and so on), the "students can lead" flag, and the Grants.gov link column are new. None of these change GROW's scores.
+`federal_db.py`, `feeds.py`, `jobs_feeds.py`, `paper_network.py`, and `employers.json` are new. In `find_grants.py`, the `--queries` and `--top` settings, the mechanism column (R01, F31, and so on), the "students can lead" flag, and the Grants.gov link column are new. None of these change GROW's scores.
